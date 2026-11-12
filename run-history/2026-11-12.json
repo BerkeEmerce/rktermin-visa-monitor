@@ -4,6 +4,39 @@
     {
       "attempt": 1,
       "calendar_checked": true,
+      "checked_at": "2026-11-12T15:45:29.418403+00:00",
+      "coverage": "current month plus up to two next-arrow moves",
+      "dates": [],
+      "email_configured": false,
+      "error": null,
+      "finished_at": "2026-11-12T15:45:46Z",
+      "id": "43251215525:1",
+      "months": [
+        {
+          "checked": true,
+          "dates": [],
+          "month": "2026-11"
+        },
+        {
+          "checked": true,
+          "dates": [],
+          "month": "2026-12"
+        }
+      ],
+      "navigation_note": "Tried 2027-01 once; the portal stayed on 2026-12. 2027-01 was not checked.",
+      "reason": null,
+      "run_id": "43251215525",
+      "run_url": "https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/43251215525/attempts/1",
+      "scheduler": "cron-job.org",
+      "source": "automatic",
+      "started_at": "2026-11-12T15:45:20Z",
+      "status": "UNAVAILABLE",
+      "trigger": "workflow_dispatch",
+      "workflow_conclusion": "success"
+    },
+    {
+      "attempt": 1,
+      "calendar_checked": true,
       "checked_at": "2026-11-12T15:15:31.838363+00:00",
       "coverage": "current month plus up to two next-arrow moves",
       "dates": [],
