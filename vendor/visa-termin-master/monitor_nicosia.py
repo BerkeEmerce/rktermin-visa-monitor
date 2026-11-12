@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 
 from lib import config, extractors
 from lib.appointment_handler import AppointmentHandler
+from email_alerts import send_email
 
 PORTAL_URL = ("https://service2.diplo.de/rktermin/extern/appointment_showMonth.do"
               "?locationCode=niko&realmId=926&categoryId=1860")
@@ -29,6 +30,21 @@ def telegram(message):
             raise RuntimeError("Telegram rejected the message; check bot token and chat ID")
     except (requests.RequestException, ValueError):
         raise RuntimeError("Telegram delivery failed") from None
+
+
+def notify_available(dates):
+    if not dates:
+        return
+    text = ("Visa appointment available — North Nicosia\n" +
+            "\n".join(dates) + "\nBook manually: " + PORTAL_URL)
+    failed = []
+    for name, send in (("Telegram", telegram), ("email", send_email)):
+        try:
+            send(text)
+        except RuntimeError:
+            failed.append(name)
+    if failed:
+        raise RuntimeError("Appointment alert delivery failed for: " + ", ".join(failed))
 
 
 def available_dates(html):
@@ -149,9 +165,7 @@ def main():
             raise RuntimeError("Could not pass the portal CAPTCHA; availability is unknown")
         dates = check_months(handler, result)
         result.update(status="ok", dates=dates)
-        if dates:
-            telegram("Visa appointment available — North Nicosia\n" +
-                     "\n".join(dates) + "\nBook manually: " + PORTAL_URL)
+        notify_available(dates)
     except Exception as error:
         # Exception text from upstream could contain sensitive request data.
         # Only our explicit operational messages are included in the result.
