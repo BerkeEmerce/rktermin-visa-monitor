@@ -6,11 +6,20 @@ import re
 import sys
 import zipfile
 from datetime import datetime, timezone
-from urllib.request import Request, urlopen
+from urllib.parse import urlparse
+from urllib.request import Request, HTTPRedirectHandler, build_opener
 
 from publish_run_log import History, clean
 
 WORKFLOW = "nicosia-upstream.yml"
+
+
+class ArtifactRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if urlparse(req.full_url).netloc != urlparse(newurl).netloc:
+            redirected.remove_header("Authorization")
+        return redirected
 
 
 def artifact_result(history, metadata):
@@ -28,7 +37,7 @@ def artifact_result(history, metadata):
     request = Request(artifact["archive_download_url"], headers={
         "Authorization": "Bearer " + history.token,
         "Accept": "application/vnd.github+json", "User-Agent": "nicosia-run-history"})
-    with urlopen(request, timeout=30) as response:
+    with build_opener(ArtifactRedirect()).open(request, timeout=30) as response:
         payload = response.read(1048577)
     if len(payload) > 1048576:
         raise ValueError("Oversized result")
