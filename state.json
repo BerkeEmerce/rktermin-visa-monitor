@@ -1,7 +1,7 @@
 {
   "blocked_until": null,
   "captcha": {
-    "accepted": 0,
+    "accepted": 1,
     "images": 1,
     "ocr": {
       "engine": "2captcha"
@@ -10,23 +10,26 @@
     "rejected": 0,
     "submitted": 1
   },
-  "daily_successes": 0,
+  "daily_successes": 1,
   "day": "2026-11-12",
-  "failures": 3,
+  "failures": 0,
   "first_run": "2026-11-12T04:04:41.635776+02:00",
-  "last_check": "2026-11-12T12:48:44.970361+02:00",
-  "last_error": "PARSE_ERROR",
+  "last_check": "2026-11-12T13:27:44.010224+02:00",
+  "last_error": null,
   "last_notification": "2026-11-12T12:06:11.750986+02:00",
   "last_operational_alert": "2026-11-12T12:06:11.750986+02:00",
-  "last_status": "PARSE_ERROR",
-  "last_success": null,
+  "last_status": "UNAVAILABLE",
+  "last_success": "2026-11-12T13:27:44.010224+02:00",
   "last_summary_day": "2026-11-12",
-  "months": [],
-  "next_check": "2026-11-12T13:00:00+02:00",
+  "months": [
+    "2026-11",
+    "2026-12"
+  ],
+  "next_check": "2026-11-12T14:00:00+02:00",
   "notification_error": false,
   "notified_dates": [],
   "previous_day_successes": 0,
-  "recovery_pending": false,
+  "recovery_pending": true,
   "target": "niko:926:1860:Asia/Nicosia:3",
   "version": 1
 }
