@@ -23,10 +23,16 @@ Model confidence values near 0.98 were observed on rejected answers. These score
 
 ## Current settings and limits
 
-`MONITOR_ENABLED=false`. Recurring checks are deliberately off while recognition remains unverified. The first real monitor state records a failure, not zero appointments. Telegram and state setup do not need repeating.
+`MONITOR_ENABLED=true`: recurring experimental checks are now enabled on the staggered 15-minute cron. This is an ongoing feasibility test, not verified operational appointment monitoring. The latest fresh run inspected two images, refreshed once, submitted no guesses because the models disagreed, persisted its failure, and confirmed delivery of an operational alert: https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/43197293384 . The latest state still has `last_success=null`. Telegram and state setup do not need repeating. Stop the experiment by setting MONITOR_ENABLED=false.
 
 The initialized cloud monitor/state job completed in 33 seconds; the earlier Tesseract diagnostic completed in 36 seconds. These few runs are not a monthly runtime guarantee. The prepared 15-minute cron means 2,880 starts per 30 days; public standard-runner compute is currently free, while private Free minutes are insufficient even at one billed minute per start. No paid APIs, paid models, proxies, booking automation or larger runners are configured.
 
 The published access instructions were reviewed and robots.txt did not disallow the target during testing. That is not affirmative permission from the portal operator. Denials, rate limits and robots restrictions remain enforced. The GitHub Actions hosting-use limitation in the original report also remains unresolved for permanent production use.
 
 No successful automatic calendar check, actual appointment availability, or 24/7 operational monitoring is claimed. A test that stops at CAPTCHA is not a successful no-availability result.
+
+## Human-assisted sample and cache update
+
+The applicant transcribed one displayed challenge as e44wwd while noting uncertainty about the first two characters. That image was created at 02:08 UTC and submitted after 10:05 UTC, about eight hours later. The server rejected it. Its age and uncertain reading make it unsuitable as a verified recognition label or a conclusive session-flow test; it is excluded from automatic success metrics. No further human transcriptions are currently requested.
+
+A Python dependency cache was saved successfully before the failing portal step. Its measured compressed size was 181,590,686 bytes (about 173 MiB). It contains public package downloads only, with a stable key tied to dependency versions. Cookies, session captures, CAPTCHA images, credentials and monitor state are excluded. The three automatic answers submitted in the earlier single-model tests remain rejected; subsequent agreement-gated runs have failed safely without submitting uncertain readings.

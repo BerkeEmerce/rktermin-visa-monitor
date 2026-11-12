@@ -1,7 +1,7 @@
 # Start here
 
 **Status: experimental; GitHub and Telegram setup complete; live calendar access remains blocked by CAPTCHA.**
-The repository is published, cloud tests pass, real Telegram delivery has been confirmed, and persistent cloud state is initialized. Live OCR answers have been submitted but rejected; no current calendar has been accessed. Recurring monitoring remains disabled. See [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md) for current results. The setup instructions below remain available for a fresh installation; you do not need to repeat them.
+The repository is published, cloud tests pass, real Telegram delivery has been confirmed, and persistent cloud state is initialized. Live OCR answers have been submitted but rejected; no current calendar has been accessed. Recurring experimental checks are now enabled; availability remains unknown whenever CAPTCHA verification fails. See [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md) for current results. The setup instructions below remain available for a fresh installation; you do not need to repeat them.
 
 Two account actions require you: GitHub sign-in and creating a Telegram bot in your Telegram account. No payment details, paid service, passport details or applicant data are needed. Keep the bot token private.
 
@@ -31,6 +31,6 @@ If you prefer the GitHub website, follow README's numbered deployment procedure.
 
 Open the repository's **Actions → Visa appointment monitor → Run workflow**, select **diagnostic**, and run it. A red run with `CAPTCHA_FAILED` means availability is unknown. It does not mean appointments are unavailable.
 
-Unattended local OCR is currently disabled. Permission for automated CAPTCHA verification and reliable server acceptance have not been established. Do not enable a production monitor on the strength of passing tests. Read **VALIDATION_REPORT.md**, including the GitHub Actions service-terms limitation.
+In the existing repository, local neural OCR and experimental scheduled checks are enabled. The latest measured checks still fail at CAPTCHA, so automatic calendar access is not verified. The configuration flag for access-rule review is not affirmative permission from the portal operator. Passing unit tests does not establish an operational appointment monitor. Read **VALIDATION_REPORT.md**, including the GitHub Actions service-terms limitation.
 
 If a permitted OCR method becomes available, follow README's controlled feasibility test, validate all three months, then initialize state once and enable the schedule. If CAPTCHA remains unreliable or automation is not permitted, the requested unattended zero-cost service cannot be delivered under the current constraints. A human-completed CAPTCHA does not make ephemeral scheduled cloud runs unattended.
