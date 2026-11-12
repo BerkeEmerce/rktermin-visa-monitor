@@ -1,3 +1,5 @@
+> **Latest live 2Captcha result:** run [43203615815](https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/43203615815) submitted one paid answer; the CAPTCHA disappeared, but calendar parsing failed with Ambiguous month navigation. One follow-up [43204009433](https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/43204009433) had the same outcome. Cookie-session and locale link equivalence handling plus safe diagnostic details were subsequently pushed, with 118 local tests passing. Those last changes have not had a live solve yet. No complete three-month availability check is claimed. The user has supplied the secret and enabled hourly checks.
+
 > **Current update: hourly schedule + paid 2Captcha integration.** Local/API tests cover the new backend; live validation is pending the CAPTCHA_API_KEY secret. Recurring checks are paused until you run `scripts/enable-2captcha.ps1`. Existing Telegram/state setup is retained. See [TWOCAPTCHA_SETUP.md](TWOCAPTCHA_SETUP.md). Earlier OCR and zero-cost deployment notes below are historical.
 
 # Deployment and live validation — 12 November 2026
