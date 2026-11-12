@@ -28,3 +28,13 @@ def test_expected_target_and_secrets_private():
     assert config.params=={"locationCode":"niko","realmId":"926","categoryId":"1860"}
     assert config.timezone=="Asia/Nicosia"
     assert "TEST_SECRET" not in repr(config) and "SECRET_ID" not in repr(config)
+
+def test_history_and_appointment_only_notifications():
+    workflow = yaml.load((ROOT/".github/workflows/monitor.yml").read_text(),Loader=yaml.BaseLoader)
+    job = workflow["jobs"]["check"]
+    assert job["env"]["DAILY_SUMMARY"]=="false"
+    assert job["env"]["EMAIL_TO"]=="berkeemerce@gmail.com"
+    assert "telegram-test" not in workflow["on"]["workflow_dispatch"]["inputs"]["mode"]["options"]
+    archive = next(step for step in job["steps"] if step.get("name")=="Archive run history")
+    assert "always()" in archive["if"]
+    assert "tee monitor-result.jsonl" in str(job["steps"])

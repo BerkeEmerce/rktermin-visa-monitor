@@ -6,23 +6,23 @@ from zoneinfo import ZoneInfo
 from .availability import check_availability
 from .config import Config
 from .github_state import GitHubState, StateStorageError
-from .notifications import NotificationError, Telegram, deliver
+from .notifications import Email, NotificationError, Telegram, deliver
 from .portal_client import PortalClient
 from .state import due, load_local, record, save_local, roll_day
 from .models import CheckResult,Status
 
-def execute(config,state,client,sender,now,persist):
+def execute(config,state,client,sender,now,persist,email_sender=None):
     if state.target and state.target!=config.target:
         raise ValueError("Stored target differs from configuration; use a separate repository/state")
     if not due(state,now):
         roll_day(state,now)
         cached = CheckResult(Status(state.last_status or "NETWORK_ERROR"),months=state.months,error=state.last_error)
         try:
-            deliver(state,cached,now,config,sender)
+            deliver(state,cached,now,config,sender,email_sender)
         except NotificationError:
             state.notification_error = True
         persist(state)
-        print(json.dumps({"status":"SKIPPED","next_check":state.next_check,"blocked_until":state.blocked_until}))
+        print(json.dumps({"status":"SKIPPED","checked_at":now.isoformat(),"months":[],"dates":[],"reason":"Check interval or portal cooldown has not elapsed","next_check":state.next_check,"blocked_until":state.blocked_until}))
         return 1 if state.notification_error else 0
     state.target = config.target
     result = check_availability(client,now.date())
@@ -30,12 +30,12 @@ def execute(config,state,client,sender,now,persist):
     persist(state)
     failed = False
     try:
-        deliver(state,result,now,config,sender)
+        deliver(state,result,now,config,sender,email_sender)
     except NotificationError:
         state.notification_error = True
         failed = True
     persist(state)
-    print(json.dumps(asdict(result)|{"notification_error":failed},sort_keys=True))
+    print(json.dumps(asdict(result)|{"checked_at":now.isoformat(),"notification_error":failed,"delivery_errors":state.delivery_errors,"email_configured":email_sender is not None},sort_keys=True))
     return 0 if result.complete and not failed else 1
 
 def main(argv=None):
@@ -50,9 +50,8 @@ def main(argv=None):
         now = datetime.now(ZoneInfo(config.timezone))
         sender = Telegram(config.token,config.chat_id)
         if args.command=="telegram-test":
-            sender.send("RK-Termin test notification. Telegram delivery works; calendar monitoring is not yet verified.")
-            print("Telegram test delivery confirmed")
-            return 0
+            print(json.dumps({"status":"DISABLED","reason":"Telegram now sends appointment alerts only"}))
+            return 2
         if args.command=="diagnostic":
             result = check_availability(PortalClient(config),now.date())
             print(json.dumps(asdict(result),sort_keys=True))
@@ -64,7 +63,7 @@ def main(argv=None):
         store = GitHubState() if args.github_state else None
         state = store.load(args.initialize_state) if store else load_local(args.state)
         persist = store.save if store else lambda value:save_local(args.state,value)
-        return execute(config,state,PortalClient(config),sender,now,persist)
+        return execute(config,state,PortalClient(config),sender,now,persist,Email.from_env())
     except (ValueError,StateStorageError,NotificationError) as exc:
         print(json.dumps({"status":"CONFIG_OR_DELIVERY_ERROR","reason":str(exc)}))
         return 2
