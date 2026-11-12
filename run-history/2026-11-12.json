@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-12",
+  "runs": [
+    {
+      "attempt": 1,
+      "calendar_checked": true,
+      "checked_at": "2026-11-12T12:50:28.231764+00:00",
+      "coverage": "Current portal month",
+      "dates": [],
+      "email_configured": false,
+      "error": null,
+      "finished_at": "2026-11-12T12:50:42Z",
+      "id": "43221584884:1",
+      "reason": null,
+      "run_id": "43221584884",
+      "run_url": "https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/43221584884/attempts/1",
+      "source": "manual",
+      "started_at": "2026-11-12T12:50:20Z",
+      "status": "UNAVAILABLE",
+      "trigger": "push",
+      "workflow_conclusion": "success"
+    }
+  ],
+  "version": 1
+}
