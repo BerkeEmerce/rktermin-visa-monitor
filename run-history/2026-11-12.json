@@ -4,6 +4,41 @@
     {
       "attempt": 1,
       "calendar_checked": true,
+      "checked_at": "2026-11-12T21:48:58.485454+00:00",
+      "coverage": "one back-arrow attempt, then up to three forward-arrow moves",
+      "dates": [],
+      "email_configured": false,
+      "error": null,
+      "finished_at": "2026-11-12T21:49:14Z",
+      "id": "43313916454:1",
+      "months": [
+        {
+          "checked": true,
+          "dates": [],
+          "month": "2026-11"
+        },
+        {
+          "checked": true,
+          "dates": [],
+          "month": "2026-12"
+        }
+      ],
+      "navigation_note": "Back arrow stayed on 2026-11; 2026-10 was not checked. Tried 2027-01 once; the portal stayed on 2026-12. 2027-01 was not checked.",
+      "reason": null,
+      "run_id": "43313916454",
+      "run_url": "https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/43313916454/attempts/1",
+      "scheduler": null,
+      "snapshot_capture_error": null,
+      "snapshot_manifest": "snapshots/runs/43313916454-1.json",
+      "source": "manual",
+      "started_at": "2026-11-12T21:48:50Z",
+      "status": "UNAVAILABLE",
+      "trigger": "push",
+      "workflow_conclusion": "success"
+    },
+    {
+      "attempt": 1,
+      "calendar_checked": true,
       "checked_at": "2026-11-12T21:45:32.833861+00:00",
       "coverage": "current month plus up to two next-arrow moves",
       "dates": [],
