@@ -7,7 +7,7 @@ never reported as empty. It does not book appointments.
 
 ## Current operation
 
-- GitHub Actions runs hourly at minute 7, independently of your computer.
+- GitHub Actions runs hourly at minute 23, independently of your computer.
 - Configuration changes to the monitor workflow also trigger a deployment check.
 - The default branch must be public and the Actions variable MONITOR_ENABLED
   must equal true for scheduled/deployment runs.
