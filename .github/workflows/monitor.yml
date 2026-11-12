@@ -59,6 +59,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Restore Python dependency downloads
+        id: pip-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-python312-${{ env.CAPTCHA_MODE }}-${{ env.OCR_ENGINE }}-${{ hashFiles('pyproject.toml') }}
       - name: Install Python dependencies
         run: python -m pip install .
       - name: Install optional local OCR
@@ -71,6 +77,12 @@ jobs:
             sudo apt-get install -y --no-install-recommends tesseract-ocr
             python -m pip install '.[ocr]'
           fi
+      - name: Save dependency downloads before checking the portal
+        if: steps.pip-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ steps.pip-cache.outputs.cache-primary-key }}
       - name: Run selected mode
         shell: bash
         run: |
