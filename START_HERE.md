@@ -1,7 +1,7 @@
 # Start here
 
-**Status: experimental; not deployed; live calendar access remains blocked by CAPTCHA.**
-The source and tests are ready. A live CAPTCHA page was reached and its form/image were inspected. No CAPTCHA answer was submitted, no current calendar was accessed and no Telegram message was sent. This is not operational appointment monitoring yet.
+**Status: experimental; GitHub and Telegram setup complete; live calendar access remains blocked by CAPTCHA.**
+The repository is published, cloud tests pass, real Telegram delivery has been confirmed, and persistent cloud state is initialized. Live OCR answers have been submitted but rejected; no current calendar has been accessed. Recurring monitoring remains disabled. See [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md) for current results. The setup instructions below remain available for a fresh installation; you do not need to repeat them.
 
 Two account actions require you: GitHub sign-in and creating a Telegram bot in your Telegram account. No payment details, paid service, passport details or applicant data are needed. Keep the bot token private.
 

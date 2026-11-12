@@ -1,11 +1,13 @@
-Local validation: 12 November 2026
-Python: CPython 3.12.16 on Windows
-Command: python -m pytest tests -q
+Latest validation: 12 November 2026
 
-........................................................................ [ 73%]
-..........................                                               [100%]
-98 passed in 1.74s
+Local CPython 3.12.16 on Windows: 109 passed.
+Cloud Ubuntu Python 3.12: 109 passed in 1.07s.
+Cloud Ubuntu Python 3.13: 109 passed in 1.12s.
+Cloud CI: https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/43138810181
+Workflow actionlint v1.7.12: no findings.
 
-Workflow lint: actionlint v1.7.12, both workflows, exit 0, no findings.
-Dependency check: uv pip check; all 22 installed packages compatible.
-No Ubuntu Actions run, live Telegram delivery or CAPTCHA acceptance was verified.
+Real Telegram delivery and cloud state persistence verified.
+Automatic live CAPTCHA answers: 0 accepted / 3 submitted so far.
+Manually reviewed development attempts are excluded from OCR success metrics.
+Current calendar access and recurring monitoring remain unverified.
+See DEPLOYMENT_STATUS.md.

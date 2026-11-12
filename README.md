@@ -1,6 +1,8 @@
 # RK-Termin personal visa appointment monitor
 
-**EXPERIMENTAL — not deployed; no live calendar or end-to-end Telegram verification.**
+**EXPERIMENTAL — cloud workflow and Telegram delivery verified; live calendar access remains unverified.**
+
+Repository setup and state initialization are complete. Recurring monitoring is disabled while CAPTCHA recognition is being validated. See [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md) for the latest measured results; the original validation report is a historical snapshot.
 
 Configured for North Nicosia: `locationCode=niko`, `realmId=926`, `categoryId=1860`, `Asia/Nicosia`. The [official category page](https://service2.diplo.de/rktermin/extern/choose_category.do?locationCode=niko&realmId=926&categoryId=1860&request_locale=en) confirms this office and describes tourist visa appointments. This category is not the long-stay visa route. The software does not reserve appointments and never requests applicant information.
 

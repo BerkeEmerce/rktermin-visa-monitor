@@ -1,5 +1,7 @@
 # Validation report — 12 November 2026
 
+This is the original implementation snapshot. GitHub publication, Telegram delivery, persistent cloud state, and additional OCR experiments have since been tested. See [DEPLOYMENT_STATUS.md](DEPLOYMENT_STATUS.md) for current results.
+
 **Overall: EXPERIMENTAL / BLOCKED FOR UNATTENDED PRODUCTION. Not deployed.**
 
 ## Delivered functionality
