@@ -44,6 +44,16 @@ def verify_target(url,config):
     if any(query.get(k)!=[v] for k,v in config.params.items()):
         raise CheckError(Status.PARSE_ERROR,"Portal link targets a different category")
 
+def equivalent_month_links(first, second):
+    """Different day anchors can navigate to the same month in one session."""
+    a, b = urlsplit(first), urlsplit(second)
+    if (a.scheme, a.netloc, a.path) != (b.scheme, b.netloc, b.path):
+        return False
+    qa, qb = parse_qs(a.query), parse_qs(b.query)
+    qa.pop("dateStr", None)
+    qb.pop("dateStr", None)
+    return qa == qb and link_date(first).replace(day=1) == link_date(second).replace(day=1)
+
 def month_heading(doc):
     found = set()
     for node in doc.select('h1,h2,h3,h4,caption,th,.calendar-title,.month-title'):
@@ -86,9 +96,9 @@ def parse_calendar(html,url,expected,today,config):
         day = link_date(target)
         if endpoint(target)=="appointment_showMonth.do":
             month = day.replace(day=1)
-            if month in navigation and navigation[month]!=target:
+            if month in navigation and not equivalent_month_links(navigation[month],target):
                 raise CheckError(Status.PARSE_ERROR,"Ambiguous month navigation")
-            navigation[month] = target
+            navigation.setdefault(month,target)
         elif endpoint(target)=="appointment_showDay.do":
             if day.replace(day=1)!=displayed:
                 raise CheckError(Status.PARSE_ERROR,"Day link outside displayed month")

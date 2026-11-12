@@ -15,6 +15,18 @@ def parse(html,config,month=NOV):
 def test_no_availability_message(fixture,config):
     assert parse(fixture("nov_empty.html"),config).dates==[]
 
+
+def test_same_month_navigation_with_different_day_anchors(fixture,config):
+    from bs4 import BeautifulSoup
+    doc = BeautifulSoup(fixture("nov_empty.html"), "html.parser")
+    link = next(a for a in doc.select("a[href]") if "01.12.2026" in a["href"])
+    duplicate = doc.new_tag("a", href=link["href"].replace("01.12.2026", "30.12.2026"))
+    doc.append(duplicate)
+    assert date(2026,12,1) in parse(str(doc),config).navigation
+    duplicate["href"] += "&unexpected=1"
+    with pytest.raises(CheckError,match="Ambiguous month"):
+        parse(str(doc),config)
+
 def test_actual_day_link_evidence(fixture,config):
     page = parse(fixture("nov_available.html"),config)
     assert page.dates==[date(2026,11,18),date(2026,11,21)]
