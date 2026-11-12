@@ -1,3 +1,5 @@
+> Month checks follow the portal: inspect the current month, then follow next-month navigation at most twice. If there is no next link, or a click returns the same fully validated calendar month, stop successfully at that published horizon. Later months are not reported as checked or empty. CAPTCHA, network and malformed-page failures remain errors.
+
 # Hourly checks with 2Captcha
 
 2Captcha solving is ON by default in both Python configuration and the cloud workflow. A funded CAPTCHA_API_KEY is required; a missing key fails safely. Set CAPTCHA_MODE=disabled to turn solving off. The deployed repository already has its API-key secret and hourly monitoring enabled.

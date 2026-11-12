@@ -114,10 +114,34 @@ def test_expired_session_mid_navigation(fixture,config):
     result = check_availability(PortalClient(config,transport),TODAY)
     assert result.status==Status.PARTIAL_CHECK and result.error=="CAPTCHA_FAILED"
 
-def test_missing_navigation_fails(fixture,config):
+def test_missing_next_link_ends_at_published_horizon(fixture,config):
     html = fixture("nov_empty.html").replace("appointment_showMonth.do","unknown.do")
     result = check_availability(PortalClient(config,FakeTransport([html])),TODAY)
-    assert result.status==Status.PARTIAL_CHECK
+    assert result.status==Status.UNAVAILABLE and result.complete
+    assert result.months==["2026-11"]
+    assert "beyond 2026-11" in result.reason
+
+
+def test_next_click_staying_in_december_is_normal_boundary(fixture,config):
+    transport = FakeTransport([fixture("nov_empty.html"),fixture("dec_empty.html"),fixture("dec_empty.html")])
+    result = check_availability(PortalClient(config,transport),TODAY)
+    assert result.status==Status.UNAVAILABLE and result.complete
+    assert result.months==["2026-11","2026-12"]
+    assert "beyond 2026-12" in result.reason
+    assert len(transport.calls)==3
+
+
+def test_boundary_preserves_available_dates(fixture,config):
+    transport = FakeTransport([fixture("nov_available.html"),fixture("dec_empty.html"),fixture("dec_empty.html")])
+    result = check_availability(PortalClient(config,transport),TODAY)
+    assert result.status==Status.AVAILABLE and result.complete
+    assert result.dates==["2026-11-18","2026-11-21"]
+
+
+def test_wrong_unrelated_month_is_still_error(fixture,config):
+    transport = FakeTransport([fixture("nov_empty.html"),fixture("jan_empty.html")])
+    result = check_availability(PortalClient(config,transport),TODAY)
+    assert result.status==Status.PARTIAL_CHECK and result.error=="PARSE_ERROR"
 
 def test_december_three_months(fixture,config):
     transport = FakeTransport([fixture("dec_empty.html"),fixture("jan_empty.html"),fixture("feb_empty.html")])

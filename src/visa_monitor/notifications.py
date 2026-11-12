@@ -38,7 +38,7 @@ def deliver(state,result,now,config,sender):
         state.last_notification = stamp
         sent.append("availability")
     if result.complete and state.recovery_pending:
-        sender.send("RK-Termin monitoring recovered. All configured months were checked successfully.")
+        sender.send("RK-Termin monitoring recovered. Available months within the configured horizon were checked successfully.")
         state.recovery_pending = False
         state.last_notification = stamp
         sent.append("recovery")

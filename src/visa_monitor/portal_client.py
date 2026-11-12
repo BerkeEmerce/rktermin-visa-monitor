@@ -167,7 +167,15 @@ class PortalClient:
     def next_month(self,page,month,today):
         target = page.navigation.get(month)
         if target is None:
-            raise CheckError(Status.PARSE_ERROR,"Next month navigation is missing")
+            return None
         verify_target(target,self.config)
         html,url = self.transport.page("GET",target)
-        return parse_calendar(html,url,month,today,self.config)
+        try:
+            return parse_calendar(html,url,month,today,self.config)
+        except CheckError as exc:
+            if exc.status != Status.PARSE_ERROR or exc.reason != "Displayed month differs from requested month":
+                raise
+            # A next-month click may return the last published month unchanged.
+            # Validate that whole calendar before treating it as a normal boundary.
+            parse_calendar(html,url,page.month,today,self.config)
+            return None
