@@ -1,3 +1,5 @@
+> **Current update: hourly schedule + paid 2Captcha integration.** Local/API tests cover the new backend; live validation is pending the CAPTCHA_API_KEY secret. Recurring checks are paused until you run `scripts/enable-2captcha.ps1`. Existing Telegram/state setup is retained. See [TWOCAPTCHA_SETUP.md](TWOCAPTCHA_SETUP.md). Earlier OCR and zero-cost deployment notes below are historical.
+
 # Deployment and live validation — 12 November 2026
 
 **Experimental: repository/cloud notifications/state work; live calendar access has not succeeded.**

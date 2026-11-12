@@ -20,7 +20,7 @@ class Config:
     location_name: str = "North Nicosia"
     timezone: str = "Asia/Nicosia"
     months: int = 3
-    interval: int = 15
+    interval: int = 60
     captcha_attempts: int = 2
     timeout: int = 20
     delay: float = 3
@@ -37,6 +37,7 @@ class Config:
     daily_summary: bool = True
     token: str = field(default="", repr=False)
     chat_id: str = field(default="", repr=False)
+    captcha_api_key: str = field(default="", repr=False)
 
     def __post_init__(self):
         ZoneInfo(self.timezone)
@@ -54,8 +55,8 @@ class Config:
             raise ValueError("Request bounds: timeout 1..30, delay 3..30, retries 0..2")
         if min(self.failure_threshold,self.stale_hours,self.alert_hours,self.cooldown_hours)<1:
             raise ValueError("Health thresholds must be positive")
-        if self.captcha_mode not in ("disabled","ocr"):
-            raise ValueError("CAPTCHA_MODE must be disabled or ocr")
+        if self.captcha_mode not in ("disabled","ocr","2captcha"):
+            raise ValueError("CAPTCHA_MODE must be disabled, ocr or 2captcha")
         if self.ocr_engine not in ("tesseract", "neural"):
             raise ValueError("OCR_ENGINE must be tesseract or neural")
         if not 4 <= self.captcha_length <= 10:
@@ -68,7 +69,8 @@ class Config:
             raise ValueError("AUTO_BOOK=true is prohibited; this program cannot book")
         strings = {"location":"LOCATION_CODE","realm":"REALM_ID","category":"CATEGORY_ID",
                    "location_name":"LOCATION_NAME","timezone":"TIMEZONE","captcha_mode":"CAPTCHA_MODE",
-                   "token":"TELEGRAM_BOT_TOKEN","chat_id":"TELEGRAM_CHAT_ID", "ocr_engine":"OCR_ENGINE"}
+                   "token":"TELEGRAM_BOT_TOKEN","chat_id":"TELEGRAM_CHAT_ID", "ocr_engine":"OCR_ENGINE",
+                   "captcha_api_key":"CAPTCHA_API_KEY"}
         ints = {"months":"MONTHS_TO_CHECK","interval":"CHECK_INTERVAL_MINUTES",
                 "captcha_attempts":"MAX_CAPTCHA_ATTEMPTS","timeout":"REQUEST_TIMEOUT_SECONDS",
                 "retries":"NETWORK_RETRIES","failure_threshold":"FAILURE_ALERT_THRESHOLD",

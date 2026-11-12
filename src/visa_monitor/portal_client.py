@@ -8,6 +8,7 @@ from .calendar_parser import CALENDAR_FORM_ACTIONS, endpoint, has_captcha, parse
 from .captcha import LocalOCR, extract_challenge, fingerprint, image_bytes
 from .models import CheckError, Status
 from .neural_ocr import NeuralOCR
+from .twocaptcha import TwoCaptcha
 
 USER_AGENT = "RKTerminPersonalMonitor/0.1 (availability only; no booking)"
 
@@ -103,7 +104,9 @@ class PortalClient:
     def __init__(self,config,transport=None,ocr=None):
         self.config = config
         self.transport = transport or Transport(config)
-        self.ocr = ocr or (NeuralOCR(config.captcha_length) if config.ocr_engine == "neural" else LocalOCR())
+        self.ocr = ocr or (TwoCaptcha(config.captcha_api_key, config.captcha_length)
+                           if config.captcha_mode == "2captcha" else
+                           NeuralOCR(config.captcha_length) if config.ocr_engine == "neural" else LocalOCR())
         self.metrics = {"images":0,"recognized":0,"submitted":0,"accepted":0,"rejected":0}
 
     def open_calendar(self,month,today):
@@ -114,7 +117,7 @@ class PortalClient:
             if not has_captcha(html):
                 parse_calendar(html,url,month,today,self.config)
                 return html,url
-            if self.config.captcha_mode!="ocr" or not self.config.ocr_permitted:
+            if self.config.captcha_mode == "disabled" or (self.config.captcha_mode == "ocr" and not self.config.ocr_permitted):
                 raise CheckError(Status.CAPTCHA_FAILED,"Unattended OCR disabled; permission and live validation pending")
             challenge = extract_challenge(html,url)
             hidden = dict(challenge.fields)
@@ -150,6 +153,11 @@ class PortalClient:
             html,url = self.transport.page("POST",challenge.action,fields)
             if has_captcha(html):
                 self.metrics["rejected"] += 1
+                # Report only explicit wrong-text feedback, not an expired session.
+                if "the entered text was wrong" in html.lower():
+                    report = getattr(self.ocr, "report_incorrect", None)
+                    if callable(report):
+                        report()
             else:
                 parse_calendar(html,url,month,today,self.config)
                 self.metrics["accepted"] += 1

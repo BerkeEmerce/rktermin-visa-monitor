@@ -126,7 +126,8 @@ def test_auto_booking_rejected(monkeypatch):
 def test_scheduler_jitter_does_not_skip_next_slot(config,now):
     state = State()
     record(state,CheckResult(Status.UNAVAILABLE),now.replace(minute=7,second=45),config)
-    assert due(state,now.replace(minute=22,second=5))
+    assert not due(state,now.replace(minute=22,second=5))
+    assert due(state,now.replace(minute=7,second=5)+timedelta(hours=1))
 
 def test_interval_60_throttles_checks(config,now):
     state = State()
