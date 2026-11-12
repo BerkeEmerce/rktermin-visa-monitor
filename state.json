@@ -16,7 +16,7 @@
   "first_run": "2026-11-12T04:04:41.635776+02:00",
   "last_check": "2026-11-12T13:27:44.010224+02:00",
   "last_error": null,
-  "last_notification": "2026-11-12T12:06:11.750986+02:00",
+  "last_notification": "2026-11-12T13:27:44.010224+02:00",
   "last_operational_alert": "2026-11-12T12:06:11.750986+02:00",
   "last_status": "UNAVAILABLE",
   "last_success": "2026-11-12T13:27:44.010224+02:00",
@@ -29,7 +29,7 @@
   "notification_error": false,
   "notified_dates": [],
   "previous_day_successes": 0,
-  "recovery_pending": true,
+  "recovery_pending": false,
   "target": "niko:926:1860:Asia/Nicosia:3",
   "version": 1
 }
