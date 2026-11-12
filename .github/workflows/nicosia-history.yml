@@ -14,7 +14,7 @@ concurrency:
 jobs:
   archive:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,3 +31,13 @@ jobs:
           else
             python scripts/archive_nicosia_run.py
           fi
+      - name: Render saved HTML snapshots (optional)
+        if: github.event_name == 'workflow_run'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+          python scripts/render_nicosia_snapshots.py

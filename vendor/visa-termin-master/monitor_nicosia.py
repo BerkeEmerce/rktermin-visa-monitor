@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 from lib import config, extractors
 from lib.appointment_handler import AppointmentHandler
 from email_alerts import send_email
+from response_snapshots import capture
 
 PORTAL_URL = ("https://service2.diplo.de/rktermin/extern/appointment_showMonth.do"
               "?locationCode=niko&realmId=926&categoryId=1860")
@@ -117,6 +118,7 @@ def next_arrow(html):
 def check_months(handler, result, response_path=Path("target/response.html")):
     """Check up to three months with at most two forward-arrow requests."""
     html = response_path.read_text(encoding="utf-8")
+    capture(html, result, "Current month", directory=response_path.parent / "snapshots")
     result.update(months=[], navigation=[], dates=[])
     current = displayed_month(html)
     for index in range(3):
@@ -135,6 +137,8 @@ def check_months(handler, result, response_path=Path("target/response.html")):
         if not handler._curl(arrow, str(response_path)):
             raise RuntimeError("Next-month arrow request failed")
         html = response_path.read_text(encoding="utf-8")
+        capture(html, result, f"After next-arrow attempt {index + 1}", requested=expected,
+                directory=response_path.parent / "snapshots")
         observed = displayed_month(html)
         available_dates(html)  # A CAPTCHA or error page is never a normal stop.
         result["navigation"].append({"from": current, "requested": expected, "displayed": observed,

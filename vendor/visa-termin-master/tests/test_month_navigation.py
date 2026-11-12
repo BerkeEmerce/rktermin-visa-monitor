@@ -49,6 +49,9 @@ def test_third_month_stays_on_second_reports_it_without_retry(tmp_path):
     assert handler._curl.call_count == 2
     assert result['navigation'][-1]['status'] == 'stayed'
     assert '2027-01 was not checked' in result['navigation_note']
+    assert len(result['snapshots']) == 3
+    assert result['snapshots'][-1]['requested'] == '2027-01'
+    assert result['snapshots'][1]['render_sha256'] == result['snapshots'][2]['render_sha256']
 
 
 def test_first_arrow_stays_stops_after_one_request(tmp_path):

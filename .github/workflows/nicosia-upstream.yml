@@ -61,6 +61,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nicosia-result-${{ github.run_id }}-${{ github.run_attempt }}
-          path: vendor/visa-termin-master/result.json
+          path: |
+            vendor/visa-termin-master/result.json
+            vendor/visa-termin-master/target/snapshots/*.html
           if-no-files-found: ignore
           retention-days: 7

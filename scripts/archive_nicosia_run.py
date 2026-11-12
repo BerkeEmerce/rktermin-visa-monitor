@@ -22,7 +22,7 @@ class ArtifactRedirect(HTTPRedirectHandler):
         return redirected
 
 
-def artifact_result(history, metadata):
+def artifact_result(history, metadata, include_snapshots=False):
     artifacts = history.call("GET", f'/actions/runs/{metadata["id"]}/artifacts?per_page=100')["artifacts"]
     artifacts = [a for a in artifacts if a["name"].startswith(f'nicosia-result-{metadata["id"]}') and not a["expired"]]
     # Reruns have distinct artifacts. Never give an earlier attempt's calendar
@@ -38,14 +38,25 @@ def artifact_result(history, metadata):
         "Authorization": "Bearer " + history.token,
         "Accept": "application/vnd.github+json", "User-Agent": "nicosia-run-history"})
     with build_opener(ArtifactRedirect()).open(request, timeout=30) as response:
-        payload = response.read(1048577)
-    if len(payload) > 1048576:
+        payload = response.read(4194305)
+    if len(payload) > 4194304:
         raise ValueError("Oversized result")
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         entry = archive.getinfo("result.json")
         if entry.file_size > 65536:
             raise ValueError("Oversized result")
         result = json.loads(archive.read(entry))
+        if include_snapshots and isinstance(result, dict):
+            html = {}
+            for snapshot in result.get("snapshots", []):
+                name = snapshot.get("file", "")
+                if not re.fullmatch(r"response-0[1-3]\.html", name):
+                    continue
+                entry = archive.getinfo("target/snapshots/" + name)
+                if entry.file_size > 524288:
+                    raise ValueError("Oversized snapshot")
+                html[name] = archive.read(entry).decode("utf-8")
+            result["_snapshot_html"] = html
     return result if isinstance(result, dict) else {}
 
 
@@ -74,6 +85,8 @@ def report(metadata, result):
                     "dates": [d for d in m.get("dates", []) if isinstance(d, str) and re.fullmatch(r"\d{2}\.\d{2}\.\d{4}", d)]}
                    for m in result.get("months", []) if isinstance(m, dict) and re.fullmatch(r"\d{4}-\d{2}", str(m.get("month", "")))],
         "navigation_note": clean(result.get("navigation_note")),
+        "snapshot_manifest": f"snapshots/runs/{run_id}-{attempt}.json" if result.get("snapshots") else None,
+        "snapshot_capture_error": clean(result.get("snapshot_capture_error")),
         "workflow_conclusion": conclusion,
         "error": clean(result.get("error")),
         "reason": None if checked else clean(result.get("error") or
