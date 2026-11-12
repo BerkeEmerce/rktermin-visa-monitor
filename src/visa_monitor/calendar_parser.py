@@ -47,11 +47,17 @@ def verify_target(url,config):
 def equivalent_month_links(first, second):
     """Different day anchors can navigate to the same month in one session."""
     a, b = urlsplit(first), urlsplit(second)
-    if (a.scheme, a.netloc, a.path) != (b.scheme, b.netloc, b.path):
+    if (a.scheme, a.netloc, a.path.split(";")[0]) != (b.scheme, b.netloc, b.path.split(";")[0]):
+        return False
+    # A link can omit URL session rewriting when the cookie already carries it.
+    sa, sb = a.path.partition(";")[2], b.path.partition(";")[2]
+    if sa and sb and sa != sb:
         return False
     qa, qb = parse_qs(a.query), parse_qs(b.query)
     qa.pop("dateStr", None)
     qb.pop("dateStr", None)
+    qa.pop("request_locale", None)
+    qb.pop("request_locale", None)
     return qa == qb and link_date(first).replace(day=1) == link_date(second).replace(day=1)
 
 def month_heading(doc):
@@ -97,7 +103,14 @@ def parse_calendar(html,url,expected,today,config):
         if endpoint(target)=="appointment_showMonth.do":
             month = day.replace(day=1)
             if month in navigation and not equivalent_month_links(navigation[month],target):
-                raise CheckError(Status.PARSE_ERROR,"Ambiguous month navigation")
+                old = urlsplit(navigation[month])
+                new = urlsplit(target)
+                oq, nq = parse_qs(old.query), parse_qs(new.query)
+                changed = sorted(k for k in set(oq)|set(nq) if oq.get(k)!=nq.get(k))
+                # Diagnostic key names only: never log session IDs or query values.
+                keys = ",".join(k for k in changed if re.fullmatch(r"[A-Za-z_]{1,40}", k))
+                raise CheckError(Status.PARSE_ERROR,"Ambiguous month navigation; differing keys: "+keys+
+                                 "; different path: "+str(old.path != new.path))
             navigation.setdefault(month,target)
         elif endpoint(target)=="appointment_showDay.do":
             if day.replace(day=1)!=displayed:

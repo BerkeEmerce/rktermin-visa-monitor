@@ -27,6 +27,14 @@ def test_same_month_navigation_with_different_day_anchors(fixture,config):
     with pytest.raises(CheckError,match="Ambiguous month"):
         parse(str(doc),config)
 
+
+def test_cookie_session_and_locale_navigation_equivalence():
+    from visa_monitor.calendar_parser import equivalent_month_links
+    base = "https://service2.diplo.de/rktermin/extern/appointment_showMonth.do"
+    query = "?locationCode=niko&realmId=926&categoryId=1860&dateStr=01.12.2026"
+    assert equivalent_month_links(base+query, base+";jsessionid=example"+query+"&request_locale=en")
+    assert not equivalent_month_links(base+";jsessionid=one"+query, base+";jsessionid=two"+query)
+
 def test_actual_day_link_evidence(fixture,config):
     page = parse(fixture("nov_available.html"),config)
     assert page.dates==[date(2026,11,18),date(2026,11,21)]
