@@ -27,6 +27,8 @@ class Config:
     retries: int = 2
     dry_run: bool = True
     captcha_mode: str = "disabled"
+    ocr_engine: str = "tesseract"
+    captcha_length: int = 6
     ocr_permitted: bool = False
     failure_threshold: int = 3
     stale_hours: int = 6
@@ -54,6 +56,10 @@ class Config:
             raise ValueError("Health thresholds must be positive")
         if self.captcha_mode not in ("disabled","ocr"):
             raise ValueError("CAPTCHA_MODE must be disabled or ocr")
+        if self.ocr_engine not in ("tesseract", "neural"):
+            raise ValueError("OCR_ENGINE must be tesseract or neural")
+        if not 4 <= self.captcha_length <= 10:
+            raise ValueError("CAPTCHA_EXPECTED_LENGTH must be between 4 and 10")
 
     @classmethod
     def from_env(cls,env=None):
@@ -62,12 +68,12 @@ class Config:
             raise ValueError("AUTO_BOOK=true is prohibited; this program cannot book")
         strings = {"location":"LOCATION_CODE","realm":"REALM_ID","category":"CATEGORY_ID",
                    "location_name":"LOCATION_NAME","timezone":"TIMEZONE","captcha_mode":"CAPTCHA_MODE",
-                   "token":"TELEGRAM_BOT_TOKEN","chat_id":"TELEGRAM_CHAT_ID"}
+                   "token":"TELEGRAM_BOT_TOKEN","chat_id":"TELEGRAM_CHAT_ID", "ocr_engine":"OCR_ENGINE"}
         ints = {"months":"MONTHS_TO_CHECK","interval":"CHECK_INTERVAL_MINUTES",
                 "captcha_attempts":"MAX_CAPTCHA_ATTEMPTS","timeout":"REQUEST_TIMEOUT_SECONDS",
                 "retries":"NETWORK_RETRIES","failure_threshold":"FAILURE_ALERT_THRESHOLD",
                 "stale_hours":"STALE_AFTER_HOURS","alert_hours":"OPERATIONAL_ALERT_HOURS",
-                "cooldown_hours":"ACCESS_COOLDOWN_HOURS"}
+                "cooldown_hours":"ACCESS_COOLDOWN_HOURS", "captcha_length":"CAPTCHA_EXPECTED_LENGTH"}
         args = {k:e[v] for k,v in strings.items() if v in e}
         args.update({k:int(e[v]) for k,v in ints.items() if v in e})
         if "REQUEST_DELAY_SECONDS" in e:

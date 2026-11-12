@@ -37,6 +37,8 @@ jobs:
       MAX_CAPTCHA_ATTEMPTS: '2'
       REQUEST_TIMEOUT_SECONDS: '20'
       CAPTCHA_MODE: ${{ vars.CAPTCHA_MODE || 'disabled' }}
+      OCR_ENGINE: ${{ vars.OCR_ENGINE || 'tesseract' }}
+      CAPTCHA_EXPECTED_LENGTH: ${{ vars.CAPTCHA_EXPECTED_LENGTH || '6' }}
       OCR_PERMISSION_CONFIRMED: ${{ vars.OCR_PERMISSION_CONFIRMED || 'false' }}
       FAILURE_ALERT_THRESHOLD: ${{ vars.FAILURE_ALERT_THRESHOLD || '3' }}
       STALE_AFTER_HOURS: ${{ vars.STALE_AFTER_HOURS || '6' }}
@@ -62,9 +64,13 @@ jobs:
       - name: Install optional local OCR
         if: env.CAPTCHA_MODE == 'ocr' && env.OCR_PERMISSION_CONFIRMED == 'true'
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends tesseract-ocr
-          python -m pip install '.[ocr]'
+          if [[ "$OCR_ENGINE" == 'neural' ]]; then
+            python -m pip install '.[neural]'
+          else
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends tesseract-ocr
+            python -m pip install '.[ocr]'
+          fi
       - name: Run selected mode
         shell: bash
         run: |

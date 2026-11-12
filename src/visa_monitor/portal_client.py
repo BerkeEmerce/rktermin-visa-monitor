@@ -7,6 +7,7 @@ import requests
 from .calendar_parser import endpoint, has_captcha, parse_calendar, portal_url, verify_target
 from .captcha import LocalOCR, extract_challenge, fingerprint, image_bytes
 from .models import CheckError, Status
+from .neural_ocr import NeuralOCR
 
 USER_AGENT = "RKTerminPersonalMonitor/0.1 (availability only; no booking)"
 
@@ -102,7 +103,7 @@ class PortalClient:
     def __init__(self,config,transport=None,ocr=None):
         self.config = config
         self.transport = transport or Transport(config)
-        self.ocr = ocr or LocalOCR()
+        self.ocr = ocr or (NeuralOCR(config.captcha_length) if config.ocr_engine == "neural" else LocalOCR())
         self.metrics = {"images":0,"recognized":0,"submitted":0,"accepted":0,"rejected":0}
 
     def open_calendar(self,month,today):
@@ -127,8 +128,14 @@ class PortalClient:
             seen.add(digest)
             self.metrics["images"] += 1
             value = self.ocr.recognize(content)
+            details = getattr(self.ocr, "diagnostics", None)
+            if isinstance(details, dict):
+                self.metrics["ocr"] = dict(details)
             if not value:
-                raise CheckError(Status.CAPTCHA_FAILED,"Local OCR produced no reliable candidate")
+                reason = getattr(self.ocr, "last_error", None)
+                if not isinstance(reason, str) or not reason:
+                    reason = "Local OCR produced no reliable candidate"
+                raise CheckError(Status.CAPTCHA_FAILED, reason)
             self.metrics["recognized"] += 1
             fields = [(k,v) for k,v in challenge.fields if k!="captchaText"]
             for k,v in self.config.params.items():

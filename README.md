@@ -6,6 +6,8 @@ Configured for North Nicosia: `locationCode=niko`, `realmId=926`, `categoryId=18
 
 See [START_HERE.md](START_HERE.md) for setup and [VALIDATION_REPORT.md](VALIDATION_REPORT.md) for what has actually been verified.
 
+The optional CPU-only neural backend is selected with `OCR_ENGINE=neural` and installed with `python -m pip install '.[neural]'`. It uses the packaged MIT-licensed ddddocr model locally, without a paid API or runtime model download. `CAPTCHA_EXPECTED_LENGTH=6` validates the output format. The model score is a heuristic; only an accepted server response followed by calendar evidence establishes success. Tesseract remains available through `OCR_ENGINE=tesseract`. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## What the implementation does
 
 Each execution starts a fresh `requests.Session`, consults robots.txt, loads the month page and terminates after at most the configured current-plus-two-month horizon. It uses local time in Asia/Nicosia. It preserves cookies, the CAPTCHA form's action including `;jsessionid`, hidden tokens and the calendar dispatch button. Month changes follow the page's actual navigation links; it never synthesizes independent next-month requests or opens an appointment form.
@@ -76,7 +78,7 @@ Then run `python scripts/evaluate_ocr.py /private/path/manifest.json`. Boolean `
 
 1. In Telegram, open verified **@BotFather**, send `/newbot` and follow the prompts.
 2. Keep its token private. Open your new bot and send `/start`.
-3. On your local shell, privately set `TELEGRAM_BOT_TOKEN`, then run `python scripts/telegram_chat_id.py`. It prints chat IDs only, not message bodies or tokens. Run this locally rather than in public Actions logs. Alternatively inspect the official `getUpdates` response privately. Existing webhooks can prevent getUpdates; use a dedicated bot.
+3. On your local shell, run `python scripts/telegram_chat_id.py` and paste the bot token at its hidden prompt. An existing `TELEGRAM_BOT_TOKEN` environment variable is also supported. It prints chat IDs only, not message bodies or tokens, and does not save the token. Run this locally rather than in public Actions logs. Alternatively inspect the official `getUpdates` response privately. Existing webhooks can prevent getUpdates; use a dedicated bot.
 4. Save token and chat ID in the repository's **Settings → Secrets and variables → Actions → Secrets** as `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
 5. Test with Actions mode `telegram-test`, or locally:
 

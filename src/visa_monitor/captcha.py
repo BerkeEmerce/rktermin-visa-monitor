@@ -63,7 +63,13 @@ def fingerprint(data):
     return hashlib.sha256(data).hexdigest()
 
 class LocalOCR:
+    def __init__(self):
+        self.last_error = None
+        self.diagnostics = {"engine": "tesseract", "readings": 0}
+
     def recognize(self,data):
+        self.last_error = None
+        self.diagnostics = {"engine": "tesseract", "readings": 0}
         try:
             import cv2
             import numpy as np
@@ -82,6 +88,7 @@ class LocalOCR:
             for image in (gray,otsu,adaptive,opened):
                 for mode in (7,8):
                     value = pytesseract.image_to_string(image,config=f"--psm {mode}",timeout=5).strip()
+                    self.diagnostics["readings"] += 1
                     value = re.sub(r"\s","",value)
                     if re.fullmatch(r"[A-Za-z0-9]{4,10}",value):
                         candidates.append(value)
@@ -89,5 +96,9 @@ class LocalOCR:
                 return None
             value,votes = Counter(candidates).most_common(1)[0]
             return value if votes>=2 else None
+        except ImportError:
+            self.last_error = "Local Tesseract OCR dependencies are missing"
+            return None
         except Exception:
+            self.last_error = "Local Tesseract OCR engine or image processing failed"
             return None
