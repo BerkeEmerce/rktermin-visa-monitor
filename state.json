@@ -1,0 +1,35 @@
+{
+  "blocked_until": null,
+  "captcha": {
+    "accepted": 0,
+    "images": 2,
+    "ocr": {
+      "agreement": false,
+      "engine": "neural",
+      "readings": 4
+    },
+    "recognized": 0,
+    "refreshed": 1,
+    "rejected": 0,
+    "submitted": 0
+  },
+  "daily_successes": 0,
+  "day": "2026-11-12",
+  "failures": 1,
+  "first_run": "2026-11-12T04:04:41.635776+02:00",
+  "last_check": "2026-11-12T04:04:41.635776+02:00",
+  "last_error": "CAPTCHA_FAILED",
+  "last_notification": null,
+  "last_operational_alert": null,
+  "last_status": "CAPTCHA_FAILED",
+  "last_success": null,
+  "last_summary_day": null,
+  "months": [],
+  "next_check": "2026-11-12T04:15:00+02:00",
+  "notification_error": false,
+  "notified_dates": [],
+  "previous_day_successes": 0,
+  "recovery_pending": false,
+  "target": "niko:926:1860:Asia/Nicosia:3",
+  "version": 1
+}
