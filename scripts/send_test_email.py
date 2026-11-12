@@ -9,7 +9,12 @@ import sys
 
 def main():
     required = ("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "EMAIL_FROM")
-    missing = [key for key in required if not os.environ.get(key)]
+    settings = {key: os.environ.get(key, "") for key in required}
+    trimmed = [key for key, value in settings.items() if value != value.strip()]
+    settings = {key: value.strip() for key, value in settings.items()}
+    if trimmed:
+        print("Removed accidental surrounding whitespace from: " + ", ".join(trimmed))
+    missing = [key for key in required if not settings[key]]
     if missing:
         print("Missing GitHub Actions secrets: " + ", ".join(missing))
         return 1
@@ -20,7 +25,7 @@ def main():
             return 1
         message = EmailMessage()
         message["Subject"] = "TEST - Visa monitor email delivery"
-        message["From"] = os.environ["EMAIL_FROM"]
+        message["From"] = settings["EMAIL_FROM"]
         message["To"] = "berkeemerce@gmail.com"
         message["Date"] = formatdate(localtime=False)
         message["Message-ID"] = make_msgid()
@@ -34,14 +39,14 @@ def main():
             "Normal email alerts are sent only when new appointments are detected.\n"
         )
         context = ssl.create_default_context()
-        connection = (smtplib.SMTP_SSL(os.environ["SMTP_HOST"], port, timeout=30, context=context)
-                      if port == 465 else smtplib.SMTP(os.environ["SMTP_HOST"], port, timeout=30))
+        connection = (smtplib.SMTP_SSL(settings["SMTP_HOST"], port, timeout=30, context=context)
+                      if port == 465 else smtplib.SMTP(settings["SMTP_HOST"], port, timeout=30))
         with connection as smtp:
             if port == 587:
                 smtp.ehlo()
                 smtp.starttls(context=context)
                 smtp.ehlo()
-            smtp.login(os.environ["SMTP_USERNAME"], os.environ["SMTP_PASSWORD"])
+            smtp.login(settings["SMTP_USERNAME"], settings["SMTP_PASSWORD"])
             refused = smtp.send_message(message)
             if refused:
                 print("SMTP server refused the test recipient.")
@@ -54,8 +59,8 @@ def main():
         print(f"SMTP authentication failed (code {error.smtp_code}). Check the app password and sending account.")
     except smtplib.SMTPResponseException as error:
         print(f"SMTP server rejected the request (code {error.smtp_code}).")
-    except (OSError, smtplib.SMTPException, ValueError):
-        print("SMTP connection or delivery failed. Check the host, TLS port, and sender settings.")
+    except (OSError, smtplib.SMTPException, ValueError) as error:
+        print("SMTP connection or delivery failed (" + type(error).__name__ + "). Check the host, TLS port, and sender settings.")
     return 1
 
 if __name__ == "__main__":

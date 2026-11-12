@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - .github/workflows/email-test.yml
+      - scripts/send_test_email.py
 permissions:
   contents: read
 concurrency:

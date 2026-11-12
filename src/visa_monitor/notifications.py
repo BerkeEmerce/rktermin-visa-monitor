@@ -35,7 +35,11 @@ class Email:
 
     @classmethod
     def from_env(cls,env=None):
-        e = os.environ if env is None else env
+        source = os.environ if env is None else env
+        e = dict(source)
+        for key in ("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "EMAIL_FROM", "EMAIL_TO"):
+            if key in e:
+                e[key] = e[key].strip()
         if not e.get("SMTP_HOST"):
             return None
         required = ("SMTP_USERNAME","SMTP_PASSWORD","EMAIL_FROM")
