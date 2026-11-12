@@ -27,7 +27,7 @@ def main():
         if not source:
             continue
         digest = hashlib.sha256(source.encode()).hexdigest()
-        path = f"snapshots/images/{digest}.webp"
+        path = f"snapshots/images/{digest}.jpg"
         exists = history.call("GET", f"/contents/{path}?ref=nicosia-history", missing=True)
         if not exists:
             missing[path] = source
@@ -43,7 +43,7 @@ def main():
             page = context.new_page()
             for path, source in missing.items():
                 page.set_content(source, wait_until="domcontentloaded", timeout=15000)
-                image = page.screenshot(type="webp", quality=70, full_page=True, timeout=15000)
+                image = page.screenshot(type="jpeg", quality=70, full_page=True, timeout=15000)
                 if len(image) > 524288:
                     raise ValueError("Rendered snapshot exceeds size limit")
                 history.call("PUT", "/contents/" + path, {
