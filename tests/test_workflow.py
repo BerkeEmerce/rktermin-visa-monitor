@@ -38,3 +38,8 @@ def test_history_and_appointment_only_notifications():
     archive = next(step for step in job["steps"] if step.get("name")=="Archive run history")
     assert "always()" in archive["if"]
     assert "tee monitor-result.jsonl" in str(job["steps"])
+
+def test_configuration_deployment_runs_live_monitor():
+    workflow = yaml.load((ROOT/".github/workflows/monitor.yml").read_text(),Loader=yaml.BaseLoader)
+    assert workflow["on"]["push"]["branches"]==["main"]
+    assert workflow["on"]["push"]["paths"]==[".github/workflows/monitor.yml"]
