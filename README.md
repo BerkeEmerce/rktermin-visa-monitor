@@ -7,7 +7,10 @@ never reported as empty. It does not book appointments.
 
 ## Current operation
 
-- GitHub Actions runs hourly at minute 23, independently of your computer.
+- GitHub Actions wakes at minutes 7, 22, 37 and 52, independently of your computer.
+  The saved 60-minute interval permits one portal check per hourly time slot;
+  extra wake-ups are archived as skips without requesting a CAPTCHA. This gives
+  a missed scheduler event another opportunity within 15 minutes.
 - Configuration changes to the monitor workflow also trigger a deployment check.
 - The default branch must be public and the Actions variable MONITOR_ENABLED
   must equal true for scheduled/deployment runs.

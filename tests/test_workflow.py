@@ -7,7 +7,7 @@ ROOT = Path(__file__).parents[1]
 
 def test_schedule_and_cloud_safety():
     workflow = yaml.load((ROOT/".github/workflows/monitor.yml").read_text(),Loader=yaml.BaseLoader)
-    assert workflow["on"]["schedule"][0]["cron"]=="23 * * * *"
+    assert workflow["on"]["schedule"][0]["cron"]=="7,22,37,52 * * * *"
     assert "workflow_dispatch" in workflow["on"]
     assert workflow["concurrency"]["cancel-in-progress"]=="false"
     job = workflow["jobs"]["check"]
