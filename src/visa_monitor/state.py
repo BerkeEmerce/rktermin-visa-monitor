@@ -12,6 +12,8 @@ class State:
     last_success: str | None = None
     months: list[str] = field(default_factory=list)
     notified_dates: list[str] = field(default_factory=list)
+    email_notified_dates: list[str] = field(default_factory=list)
+    delivery_errors: dict = field(default_factory=dict)
     failures: int = 0
     last_error: str | None = None
     last_status: str | None = None
@@ -50,6 +52,14 @@ class State:
             if not isinstance(value,str):
                 raise ValueError("Invalid notified date")
             date.fromisoformat(value)
+        if not isinstance(state.email_notified_dates,list):
+            raise ValueError("Invalid email notified dates")
+        for value in state.email_notified_dates:
+            if not isinstance(value,str):
+                raise ValueError("Invalid email notified date")
+            date.fromisoformat(value)
+        if not isinstance(state.delivery_errors,dict):
+            raise ValueError("Invalid delivery error state")
         return state
 
     def encode(self):
@@ -93,6 +103,7 @@ def record(state,result,now,config):
             seconds = max(config.cooldown_hours*3600,result.retry_after)
             state.blocked_until = (now+timedelta(seconds=seconds)).isoformat()
     state.notified_dates = sorted(x for x in state.notified_dates if x>=now.date().isoformat())
+    state.email_notified_dates = sorted(x for x in state.email_notified_dates if x>=now.date().isoformat())
 
 
 def roll_day(state,now):

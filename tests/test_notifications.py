@@ -65,38 +65,70 @@ def test_dry_run_sends_nothing(config,now):
     assert deliver(state,result,now,config,sender)==[]
     assert state.notified_dates==[] and not sender.send.called
 
-def test_operational_repeated_failure_and_recovery(config,now):
-    config = replace(config,dry_run=False,daily_summary=False)
-    state,sender = State(),Mock()
-    failed = CheckResult(Status.CAPTCHA_FAILED,error="CAPTCHA_FAILED")
-    for i in range(3):
-        record(state,failed,now+timedelta(minutes=15*i),config)
-        deliver(state,failed,now+timedelta(minutes=15*i),config,sender)
-    assert sender.send.call_count==1 and "UNKNOWN" in sender.send.call_args[0][0]
-    record(state,failed,now+timedelta(hours=1),config)
-    deliver(state,failed,now+timedelta(hours=1),config,sender)
-    assert sender.send.call_count==1
-    success = CheckResult(Status.UNAVAILABLE)
-    record(state,success,now+timedelta(hours=2),config)
-    assert deliver(state,success,now+timedelta(hours=2),config,sender)==["recovery"]
-
-def test_stale_alert_before_failure_threshold(config,now):
-    config = replace(config,dry_run=False,daily_summary=False,failure_threshold=100)
-    state = State(first_run=(now-timedelta(hours=7)).isoformat())
-    result = CheckResult(Status.NETWORK_ERROR,error="NETWORK_ERROR")
+@pytest.mark.parametrize("status",[Status.CAPTCHA_FAILED,Status.NETWORK_ERROR,Status.PARSE_ERROR,Status.ACCESS_BLOCKED,Status.UNAVAILABLE])
+def test_non_availability_never_sends_telegram(config,now,status):
+    config = replace(config,dry_run=False,daily_summary=True,failure_threshold=1)
+    state,sender = State(first_run=(now-timedelta(days=2)).isoformat(),recovery_pending=True),Mock()
+    result = CheckResult(status,error=None if status==Status.UNAVAILABLE else status.value)
     record(state,result,now,config)
-    assert deliver(state,result,now,config,Mock())==["operational"]
-
-def test_daily_health_once(config,now):
-    config = replace(config,dry_run=False)
-    state,sender = State(),Mock()
-    result = CheckResult(Status.UNAVAILABLE)
-    record(state,result,now,config)
-    assert deliver(state,result,now,config,sender)==["summary"]
     assert deliver(state,result,now,config,sender)==[]
-    assert "Successful complete checks today: 1" in sender.send.call_args[0][0]
+    assert not sender.send.called
 
 def test_partial_availability_alert(config,now):
     config,state,result = setup(config,now)
     result.status = Status.PARTIAL_CHECK
     assert deliver(state,result,now,config,Mock())==["availability"]
+
+def test_email_and_telegram_acknowledge_independently(config,now):
+    config,state,result = setup(config,now)
+    telegram,email = Mock(),Mock(send=Mock(side_effect=NotificationError("email unavailable")))
+    with pytest.raises(NotificationError):
+        deliver(state,result,now,config,telegram,email)
+    assert state.notified_dates==["2026-11-18"]
+    assert state.email_notified_dates==[]
+    email.send.side_effect = None
+    assert deliver(state,result,now,config,telegram,email)==["email"]
+    assert telegram.send.call_count==1 and email.send.call_count==2
+    assert State.decode(state.encode()).email_notified_dates==["2026-11-18"]
+
+def test_email_still_attempted_when_telegram_fails(config,now):
+    config,state,result = setup(config,now)
+    telegram,email = Mock(send=Mock(side_effect=NotificationError())),Mock()
+    with pytest.raises(NotificationError):
+        deliver(state,result,now,config,telegram,email)
+    assert state.notified_dates==[] and state.email_notified_dates==["2026-11-18"]
+    assert email.send.call_count==1
+
+def test_email_configuration_is_optional_and_private():
+    from visa_monitor.notifications import Email
+    assert Email.from_env({}) is None
+    with pytest.raises(ValueError):
+        Email.from_env({"SMTP_HOST":"smtp.example.test"})
+    email = Email.from_env({"SMTP_HOST":"smtp.example.test","SMTP_USERNAME":"user",
+                           "SMTP_PASSWORD":"SECRET","EMAIL_FROM":"sender@example.test"})
+    assert email.recipient=="berkeemerce@gmail.com" and email.port==465
+    assert "SECRET" not in repr(email)
+
+def test_smtp_uses_tls_and_does_not_expose_provider_errors():
+    from visa_monitor.notifications import Email
+    from unittest.mock import patch
+    import smtplib
+    email = Email("smtp.example.test",465,"user","SECRET","sender@example.test","recipient@example.test")
+    with patch("visa_monitor.notifications.smtplib.SMTP_SSL") as factory:
+        smtp = factory.return_value.__enter__.return_value
+        smtp.send_message.return_value = {}
+        email.send("Available date")
+        assert smtp.login.call_args.args==("user","SECRET")
+        assert smtp.send_message.call_args.args[0]["To"]=="recipient@example.test"
+        smtp.login.side_effect = smtplib.SMTPException("SECRET")
+        with pytest.raises(NotificationError) as error:
+            email.send("Available date")
+        assert "SECRET" not in str(error.value)
+
+def test_telegram_test_command_is_disabled(monkeypatch,capsys):
+    from visa_monitor.main import main
+    monkeypatch.setenv("DRY_RUN","true")
+    from unittest.mock import patch
+    with patch("visa_monitor.main.Telegram.send") as send:
+        assert main(["telegram-test"])==2
+    assert not send.called

@@ -1,20 +1,24 @@
 name: Visa appointment monitor
 on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/monitor.yml]
   schedule:
     - cron: '7 * * * *'
   workflow_dispatch:
     inputs:
       mode:
         type: choice
-        options: [diagnostic, telegram-test, monitor]
-        default: diagnostic
-        description: Diagnostic, Telegram test, or monitor
+        options: [monitor, diagnostic]
+        default: monitor
+        description: Monitor with saved history, or diagnostic
       initialize_state:
         type: boolean
         default: false
         description: Initialize state once (manual monitor only)
 permissions:
   contents: write
+  actions: read
 concurrency:
   group: visa-monitor
   cancel-in-progress: false
@@ -44,17 +48,24 @@ jobs:
       STALE_AFTER_HOURS: ${{ vars.STALE_AFTER_HOURS || '6' }}
       OPERATIONAL_ALERT_HOURS: ${{ vars.OPERATIONAL_ALERT_HOURS || '24' }}
       ACCESS_COOLDOWN_HOURS: ${{ vars.ACCESS_COOLDOWN_HOURS || '24' }}
-      DAILY_SUMMARY: ${{ vars.DAILY_SUMMARY || 'true' }}
+      DAILY_SUMMARY: 'false'
       DRY_RUN: 'false'
       AUTO_BOOK: 'false'
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       CAPTCHA_API_KEY: ${{ secrets.CAPTCHA_API_KEY }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ vars.SMTP_PORT || '465' }}
+      SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+      EMAIL_TO: 'berkeemerce@gmail.com'
       GH_TOKEN: ${{ github.token }}
       MODE: ${{ inputs.mode || 'monitor' }}
       INITIALIZE: ${{ inputs.initialize_state && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
+        id: checkout
         with:
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -90,11 +101,13 @@ jobs:
           set -euo pipefail
           case "$MODE" in
             diagnostic) python -m visa_monitor.main diagnostic ;;
-            telegram-test) python -m visa_monitor.main telegram-test ;;
             monitor)
               args=(check --github-state)
               if [[ "$INITIALIZE" == 'true' ]]; then args+=(--initialize-state); fi
               python -m visa_monitor.main "${args[@]}"
               ;;
             *) exit 2 ;;
-          esac
+          esac | tee monitor-result.jsonl
+      - name: Archive run history
+        if: always() && steps.checkout.outcome == 'success'
+        run: python scripts/publish_run_log.py

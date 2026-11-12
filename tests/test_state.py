@@ -135,10 +135,10 @@ def test_interval_60_throttles_checks(config,now):
     assert not due(state,now.replace(minute=22))
     assert due(state,now.replace(minute=7)+timedelta(hours=1))
 
-def test_cooldown_daily_summary_without_portal_check(config,now):
+def test_cooldown_rolls_daily_counters_without_telegram(config,now):
     state = State(blocked_until=(now+timedelta(hours=24)).isoformat(),last_status="ACCESS_BLOCKED",
                   last_error="ACCESS_BLOCKED",day=(now-timedelta(days=1)).date().isoformat(),daily_successes=2)
     sender,client = Mock(),Mock()
     assert execute(replace(config,dry_run=False),state,client,sender,now,Mock())==0
-    assert sender.send.called and not client.open_calendar.called
+    assert not sender.send.called and not client.open_calendar.called
     assert state.daily_successes==0 and state.previous_day_successes==2
