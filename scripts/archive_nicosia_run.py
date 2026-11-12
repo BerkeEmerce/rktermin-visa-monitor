@@ -69,7 +69,12 @@ def report(metadata, result):
         "checked_at": result.get("checked_at") if checked else None,
         "finished_at": metadata.get("updated_at"), "status": status,
         "dates": dates, "calendar_checked": checked,
-        "coverage": "Current portal month", "workflow_conclusion": conclusion,
+        "coverage": clean(result.get("coverage") or "Current portal month"),
+        "months": [{"month": m["month"], "checked": m.get("checked") is True,
+                    "dates": [d for d in m.get("dates", []) if isinstance(d, str) and re.fullmatch(r"\d{2}\.\d{2}\.\d{4}", d)]}
+                   for m in result.get("months", []) if isinstance(m, dict) and re.fullmatch(r"\d{4}-\d{2}", str(m.get("month", "")))],
+        "navigation_note": clean(result.get("navigation_note")),
+        "workflow_conclusion": conclusion,
         "error": clean(result.get("error")),
         "reason": None if checked else clean(result.get("error") or
                    "No confirmed calendar result. Open the GitHub log for details."),

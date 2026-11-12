@@ -1,10 +1,12 @@
 """Notification-only cloud entry point using the upstream CAPTCHA workflow."""
 import json
+import calendar
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -58,10 +60,82 @@ def available_dates(html):
     return []
 
 
+def displayed_month(html):
+    """Read the displayed heading, never infer it from the requested URL."""
+    names = {name.lower(): number for number, name in enumerate(calendar.month_name) if name}
+    names.update(dict(zip("januar februar märz april mai juni juli august september oktober november dezember".split(), range(1, 13))))
+    found = set()
+    page = BeautifulSoup(html, "html.parser")
+    for heading in page.select("h1,h2,h3,h4,caption,th,.month-title,.calendar-title"):
+        text = " ".join(heading.get_text(" ", strip=True).lower().split())
+        numeric = re.fullmatch(r"(0?[1-9]|1[0-2])\s*/\s*(20\d{2})", text)
+        if numeric:
+            found.add(f"{numeric[2]}-{int(numeric[1]):02d}")
+        for name, number in names.items():
+            for match in re.finditer(r"(?<!\w)" + name + r"\s+(20\d{2})(?!\d)", text):
+                found.add(f"{match[1]}-{number:02d}")
+    if len(found) != 1:
+        raise RuntimeError("Could not identify the displayed calendar month")
+    return found.pop()
+
+
+def next_arrow(html):
+    """Follow the portal's green next arrow, preserving its session URL."""
+    page = BeautifulSoup(html, "html.parser")
+    for image in page.select("a[href] img"):
+        hint = " ".join(str(image.get(key, "")) for key in ("src", "alt", "title")).lower()
+        if "go-next" not in hint and "next month" not in hint:
+            continue
+        url = urljoin(config.HOST.rstrip("/") + "/", image.find_parent("a")["href"])
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query)
+        if (parsed.scheme != "https" or parsed.netloc != "service2.diplo.de" or
+                parsed.path.split(";")[0] != "/rktermin/extern/appointment_showMonth.do" or
+                any(query.get(key) != [value] for key, value in
+                    (("locationCode", "niko"), ("realmId", "926"), ("categoryId", "1860")))):
+            raise RuntimeError("Next arrow points outside the configured appointment category")
+        return url
+    return None
+
+
+def check_months(handler, result, response_path=Path("target/response.html")):
+    """Check up to three months with at most two forward-arrow requests."""
+    html = response_path.read_text(encoding="utf-8")
+    result.update(months=[], navigation=[], dates=[])
+    current = displayed_month(html)
+    for index in range(3):
+        dates = available_dates(html)
+        result["months"].append({"month": current, "checked": True, "dates": dates})
+        result["dates"] = sorted(set(result["dates"] + dates), key=lambda d: datetime.strptime(d, "%d.%m.%Y"))
+        if index == 2:
+            break
+        year, month = map(int, current.split("-"))
+        expected = f"{year + (month == 12):04d}-{month % 12 + 1:02d}"
+        arrow = next_arrow(html)
+        if not arrow:
+            result["navigation"].append({"from": current, "requested": expected, "displayed": current, "status": "no_arrow"})
+            result["navigation_note"] = f"No next-month arrow after {current}; {expected} was not checked."
+            break
+        if not handler._curl(arrow, str(response_path)):
+            raise RuntimeError("Next-month arrow request failed")
+        html = response_path.read_text(encoding="utf-8")
+        observed = displayed_month(html)
+        available_dates(html)  # A CAPTCHA or error page is never a normal stop.
+        result["navigation"].append({"from": current, "requested": expected, "displayed": observed,
+                                     "status": "stayed" if observed == current else "advanced"})
+        if observed == current:
+            result["navigation_note"] = f"Tried {expected} once; the portal stayed on {current}. {expected} was not checked."
+            break
+        if observed != expected:
+            raise RuntimeError("Next arrow displayed an unexpected calendar month")
+        current = observed
+    return result["dates"]
+
+
 def main():
     result = {"checked_at": datetime.now(timezone.utc).isoformat(),
               "target": "niko:926:1860", "auto_book": False,
-              "coverage": "current portal month"}
+              "coverage": "current month plus up to two next-arrow moves"}
     exit_code = 0
     try:
         for name in ("CAPTCHA_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"):
@@ -70,10 +144,10 @@ def main():
         # This entry point never calls the booking workflow or a booking method.
         config.AUTO_BOOK = False
         config.BOOKING_DRY_RUN = True
-        if not AppointmentHandler(str(Path.cwd())).fetch_month_view():
+        handler = AppointmentHandler(str(Path.cwd()))
+        if not handler.fetch_month_view():
             raise RuntimeError("Could not pass the portal CAPTCHA; availability is unknown")
-        html = Path("target/response.html").read_text(encoding="utf-8")
-        dates = available_dates(html)
+        dates = check_months(handler, result)
         result.update(status="ok", dates=dates)
         if dates:
             telegram("Visa appointment available — North Nicosia\n" +

@@ -51,3 +51,15 @@ def test_manual_dispatch_is_not_external_scheduler():
     value = report(run, {})
     assert value["source"] == "manual"
     assert value["scheduler"] is None
+
+
+def test_archive_keeps_checked_months_and_normal_navigation_stop():
+    result = {"status": "ok", "dates": [],
+              "months": [{"month": "2026-11", "checked": True, "dates": []},
+                         {"month": "2026-12", "checked": True, "dates": []}],
+              "navigation_note": "Tried 2027-01 once; the portal stayed on 2026-12.",
+              "coverage": "current month plus up to two next-arrow moves"}
+    value = report(metadata(), result)
+    assert [m["month"] for m in value["months"]] == ["2026-11", "2026-12"]
+    assert value["status"] == "UNAVAILABLE"
+    assert value["navigation_note"] == result["navigation_note"]
