@@ -96,12 +96,13 @@ def displayed_month(html):
     return found.pop()
 
 
-def next_arrow(html):
-    """Follow the portal's green next arrow, preserving its session URL."""
+def calendar_arrow(html, direction):
+    """Read a portal arrow, preserving and validating its session URL."""
     page = BeautifulSoup(html, "html.parser")
     for image in page.select("a[href] img"):
         hint = " ".join(str(image.get(key, "")) for key in ("src", "alt", "title")).lower()
-        if "go-next" not in hint and "next month" not in hint:
+        names = ("go-next", "next month") if direction == "next" else ("go-previous", "previous month")
+        if not any(name in hint for name in names):
             continue
         url = urljoin(config.HOST.rstrip("/") + "/", image.find_parent("a")["href"])
         parsed = urlparse(url)
@@ -110,29 +111,65 @@ def next_arrow(html):
                 parsed.path.split(";")[0] != "/rktermin/extern/appointment_showMonth.do" or
                 any(query.get(key) != [value] for key, value in
                     (("locationCode", "niko"), ("realmId", "926"), ("categoryId", "1860")))):
-            raise RuntimeError("Next arrow points outside the configured appointment category")
+            raise RuntimeError("Calendar arrow points outside the configured appointment category")
         return url
     return None
 
 
+def next_arrow(html):
+    return calendar_arrow(html, "next")
+
+
+def adjacent_month(current, step):
+    year, month = map(int, current.split("-"))
+    year, month = divmod(year * 12 + month - 1 + step, 12)
+    return f"{year:04d}-{month + 1:02d}"
+
+
 def check_months(handler, result, response_path=Path("target/response.html")):
-    """Check up to three months with at most two forward-arrow requests."""
+    """Try back once, then scan forward without retrying a blocked arrow."""
     html = response_path.read_text(encoding="utf-8")
-    capture(html, result, "Current month", directory=response_path.parent / "snapshots")
+    capture(html, result, "After CAPTCHA", directory=response_path.parent / "snapshots")
     result.update(months=[], navigation=[], dates=[])
     current = displayed_month(html)
-    for index in range(3):
+    available_dates(html)  # Validate the accepted calendar before navigating.
+    previous = adjacent_month(current, -1)
+    back = calendar_arrow(html, "previous")
+    forward_moves = 2
+    notes = []
+    if back:
+        if not handler._curl(back, str(response_path)):
+            raise RuntimeError("Back-arrow request failed")
+        html = response_path.read_text(encoding="utf-8")
+        capture(html, result, "After back-arrow attempt", requested=previous,
+                directory=response_path.parent / "snapshots")
+        observed = displayed_month(html)
+        available_dates(html)
+        if observed not in (current, previous):
+            raise RuntimeError("Back arrow displayed an unexpected calendar month")
+        result["navigation"].append({"direction": "back", "from": current, "requested": previous,
+                                     "displayed": observed, "status": "stayed" if observed == current else "advanced"})
+        if observed == previous:
+            notes.append(f"Back arrow reached {previous}.")
+            forward_moves = 3
+        else:
+            notes.append(f"Back arrow stayed on {current}; {previous} was not checked.")
+        current = observed
+    else:
+        notes.append(f"No back arrow after {current}; {previous} was not checked.")
+        result["navigation"].append({"direction": "back", "from": current, "requested": previous,
+                                     "displayed": current, "status": "no_arrow"})
+    for index in range(forward_moves + 1):
         dates = available_dates(html)
         result["months"].append({"month": current, "checked": True, "dates": dates})
         result["dates"] = sorted(set(result["dates"] + dates), key=lambda d: datetime.strptime(d, "%d.%m.%Y"))
-        if index == 2:
+        if index == forward_moves:
             break
-        year, month = map(int, current.split("-"))
-        expected = f"{year + (month == 12):04d}-{month % 12 + 1:02d}"
+        expected = adjacent_month(current, 1)
         arrow = next_arrow(html)
         if not arrow:
-            result["navigation"].append({"from": current, "requested": expected, "displayed": current, "status": "no_arrow"})
-            result["navigation_note"] = f"No next-month arrow after {current}; {expected} was not checked."
+            result["navigation"].append({"direction": "next", "from": current, "requested": expected, "displayed": current, "status": "no_arrow"})
+            notes.append(f"No next-month arrow after {current}; {expected} was not checked.")
             break
         if not handler._curl(arrow, str(response_path)):
             raise RuntimeError("Next-month arrow request failed")
@@ -141,21 +178,22 @@ def check_months(handler, result, response_path=Path("target/response.html")):
                 directory=response_path.parent / "snapshots")
         observed = displayed_month(html)
         available_dates(html)  # A CAPTCHA or error page is never a normal stop.
-        result["navigation"].append({"from": current, "requested": expected, "displayed": observed,
+        result["navigation"].append({"direction": "next", "from": current, "requested": expected, "displayed": observed,
                                      "status": "stayed" if observed == current else "advanced"})
         if observed == current:
-            result["navigation_note"] = f"Tried {expected} once; the portal stayed on {current}. {expected} was not checked."
+            notes.append(f"Tried {expected} once; the portal stayed on {current}. {expected} was not checked.")
             break
         if observed != expected:
             raise RuntimeError("Next arrow displayed an unexpected calendar month")
         current = observed
+    result["navigation_note"] = " ".join(notes)
     return result["dates"]
 
 
 def main():
     result = {"checked_at": datetime.now(timezone.utc).isoformat(),
               "target": "niko:926:1860", "auto_book": False,
-              "coverage": "current month plus up to two next-arrow moves"}
+              "coverage": "one back-arrow attempt, then up to three forward-arrow moves"}
     exit_code = 0
     try:
         for name in ("CAPTCHA_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"):

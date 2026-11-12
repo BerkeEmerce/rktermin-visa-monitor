@@ -5,10 +5,10 @@ from unittest.mock import Mock
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from monitor_nicosia import check_months, displayed_month, next_arrow
+from monitor_nicosia import check_months, displayed_month, next_arrow, calendar_arrow
 
 
-def page(month, year, next_month=None, dates=()):
+def page(month, year, next_month=None, dates=(), previous_month=None):
     html = f'<h2>{month}/{year}</h2>'
     if dates:
         for day in dates:
@@ -17,6 +17,8 @@ def page(month, year, next_month=None, dates=()):
         html += '<p>Unfortunately, there are no appointments available at this time.</p>'
     if next_month:
         html += f'<a href="extern/appointment_showMonth.do;jsessionid=fixture?locationCode=niko&amp;realmId=926&amp;categoryId=1860&amp;dateStr={next_month}"><img src="images/go-next.gif"></a>'
+    if previous_month:
+        html += f'<a href="extern/appointment_showMonth.do;jsessionid=fixture?locationCode=niko&amp;realmId=926&amp;categoryId=1860&amp;dateStr={previous_month}"><img src="images/go-previous.gif"></a>'
     return html
 
 
@@ -39,7 +41,7 @@ def test_checks_three_months_with_exactly_two_arrow_requests(tmp_path):
                                      page(12, 2026, '01.01.2027'), page(1, 2027, '01.02.2027')])
     assert [m['month'] for m in result['months']] == ['2026-11', '2026-12', '2027-01']
     assert handler._curl.call_count == 2
-    assert all(n['status'] == 'advanced' for n in result['navigation'])
+    assert all(n['status'] == 'advanced' for n in result['navigation'] if n['direction'] == 'next')
 
 
 def test_third_month_stays_on_second_reports_it_without_retry(tmp_path):
@@ -93,3 +95,61 @@ def test_ignores_language_links_and_rejects_foreign_arrow():
 @pytest.mark.parametrize('heading', ['<h2>November 2026</h2>', '<h2>11/2026</h2>'])
 def test_reads_actual_displayed_heading(heading):
     assert displayed_month(heading) == '2026-11'
+
+
+def test_back_moves_then_three_forward_attempts_with_no_retry(tmp_path):
+    december = page(12, 2026, '01.01.2027', previous_month='01.11.2026')
+    november = page(11, 2026, '01.12.2026', dates=['25.11.2026'])
+    january = page(1, 2027, '01.02.2027')
+    result, handler = scan(tmp_path, [december, november, december, january, january])
+    assert [m['month'] for m in result['months']] == ['2026-11', '2026-12', '2027-01']
+    assert result['dates'] == ['25.11.2026']
+    assert handler._curl.call_count == 4
+    assert 'dateStr=01.11.2026' in handler._curl.call_args_list[0].args[0]
+    assert result['navigation'][0]['direction'] == 'back'
+    assert result['navigation'][0]['status'] == 'advanced'
+    assert '2027-02 was not checked' in result['navigation_note']
+    assert len(result['snapshots']) == 5
+    assert result['snapshots'][1]['stage'] == 'After back-arrow attempt'
+    assert result['snapshots'][-1]['requested'] == '2027-02'
+
+
+def test_back_stays_once_then_normal_forward_checks(tmp_path):
+    november = page(11, 2026, '01.12.2026', previous_month='01.10.2026')
+    december = page(12, 2026, '01.01.2027')
+    result, handler = scan(tmp_path, [november, november, december, december])
+    assert [m['month'] for m in result['months']] == ['2026-11', '2026-12']
+    assert handler._curl.call_count == 3
+    assert result['navigation'][0]['status'] == 'stayed'
+    assert '2026-10 was not checked' in result['navigation_note']
+    assert '2027-01 was not checked' in result['navigation_note']
+
+
+def test_back_across_new_year_then_reaches_all_forward_months(tmp_path):
+    result, handler = scan(tmp_path, [page(1, 2099, '01.02.2099', previous_month='01.12.2098'),
+                                     page(12, 2098, '01.01.2099'), page(1, 2099, '01.02.2099'),
+                                     page(2, 2099, '01.03.2099'), page(3, 2099, dates=['15.03.2099'])])
+    assert [m['month'] for m in result['months']] == ['2098-12', '2099-01', '2099-02', '2099-03']
+    assert result['dates'] == ['15.03.2099']
+    assert handler._curl.call_count == 4
+
+
+@pytest.mark.parametrize('response', [page(9, 2026), '<h2>10/2026</h2><input name="captchaText">'])
+def test_invalid_back_response_fails_instead_of_claiming_checked(tmp_path, response):
+    with pytest.raises(RuntimeError):
+        scan(tmp_path, [page(11, 2026, previous_month='01.10.2026'), response])
+
+
+def test_back_request_failure_is_reported(tmp_path):
+    target = tmp_path / 'response.html'
+    target.write_text(page(11, 2026, previous_month='01.10.2026'), encoding='utf-8')
+    handler = Mock()
+    handler._curl.return_value = False
+    with pytest.raises(RuntimeError, match='Back-arrow request failed'):
+        check_months(handler, {}, target)
+    handler._curl.assert_called_once()
+
+
+def test_back_arrow_rejects_wrong_category():
+    with pytest.raises(RuntimeError):
+        calendar_arrow('<a href="extern/appointment_showMonth.do?locationCode=niko&amp;realmId=926&amp;categoryId=999"><img src="go-previous.gif"></a>', 'previous')

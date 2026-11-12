@@ -22,7 +22,7 @@ def main():
         return
     entries = []
     missing = {}
-    for snapshot in result.get("snapshots", [])[:3]:
+    for snapshot in result.get("snapshots", [])[:5]:
         source = html.get(snapshot.get("file"))
         if not source:
             continue

@@ -63,3 +63,28 @@ def test_archive_keeps_checked_months_and_normal_navigation_stop():
     assert [m["month"] for m in value["months"]] == ["2026-11", "2026-12"]
     assert value["status"] == "UNAVAILABLE"
     assert value["navigation_note"] == result["navigation_note"]
+
+
+def test_artifact_reader_keeps_all_five_navigation_snapshots(monkeypatch):
+    import io
+    import json
+    import zipfile
+    from unittest.mock import Mock, MagicMock
+    import archive_nicosia_run
+
+    result = {"status": "ok", "snapshots": [{"file": f"response-{n:02d}.html"} for n in range(1, 6)]}
+    payload = io.BytesIO()
+    with zipfile.ZipFile(payload, "w") as archive:
+        archive.writestr("result.json", json.dumps(result))
+        for snapshot in result["snapshots"]:
+            archive.writestr("target/snapshots/" + snapshot["file"], "<h2>1/2099</h2>")
+    opener = MagicMock()
+    opener.open.return_value.__enter__.return_value.read.return_value = payload.getvalue()
+    monkeypatch.setattr(archive_nicosia_run, "build_opener", lambda *_: opener)
+    history = Mock()
+    history.token = "test-token"
+    history.call.return_value = {"artifacts": [{"name": "nicosia-result-12345-1", "expired": False,
+                                               "created_at": "2026-11-12", "archive_download_url": "https://example.com/artifact"}]}
+    restored = archive_nicosia_run.artifact_result(history, metadata(), include_snapshots=True)
+    assert len(restored["_snapshot_html"]) == 5
+    assert restored["_snapshot_html"]["response-05.html"] == "<h2>1/2099</h2>"
