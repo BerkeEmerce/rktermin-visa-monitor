@@ -59,9 +59,12 @@ def report(metadata, result):
     status = ("AVAILABLE" if dates else "UNAVAILABLE") if checked else (
         "CANCELLED" if conclusion == "cancelled" else "SKIPPED" if conclusion == "skipped" else
         "NOT_RECORDED" if conclusion == "success" else "RUN_FAILED")
+    external = (metadata["event"] == "workflow_dispatch" and
+                metadata.get("display_title") == "Nicosia check · cron-job.org")
     return {
         "id": f"{run_id}:{attempt}", "run_id": run_id, "attempt": attempt,
-        "source": "automatic" if metadata["event"] == "schedule" else "manual",
+        "source": "automatic" if metadata["event"] == "schedule" or external else "manual",
+        "scheduler": "cron-job.org" if external else "GitHub schedule" if metadata["event"] == "schedule" else None,
         "trigger": metadata["event"], "started_at": started,
         "checked_at": result.get("checked_at") if checked else None,
         "finished_at": metadata.get("updated_at"), "status": status,

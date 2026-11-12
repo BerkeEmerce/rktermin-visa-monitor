@@ -35,3 +35,19 @@ def test_deployment_is_not_automatic():
     value = report(metadata(event="push"), {})
     assert value["source"] == "manual"
     assert value["trigger"] == "push"
+
+
+def test_external_scheduler_is_automatic():
+    run = metadata(event="workflow_dispatch")
+    run["display_title"] = "Nicosia check · cron-job.org"
+    value = report(run, {"status": "ok", "dates": []})
+    assert value["source"] == "automatic"
+    assert value["scheduler"] == "cron-job.org"
+
+
+def test_manual_dispatch_is_not_external_scheduler():
+    run = metadata(event="workflow_dispatch")
+    run["display_title"] = "Nicosia check · manual"
+    value = report(run, {})
+    assert value["source"] == "manual"
+    assert value["scheduler"] is None

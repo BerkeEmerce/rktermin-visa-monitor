@@ -1,13 +1,18 @@
 name: Nicosia upstream visa monitor
+run-name: Nicosia check · ${{ inputs.trigger_source || github.event_name }}
 on:
-  schedule:
-    - cron: '27,57 * * * *'
   push:
     branches: [main]
     paths:
       - '.github/workflows/nicosia-upstream.yml'
       - 'vendor/visa-termin-master/**'
   workflow_dispatch:
+    inputs:
+      trigger_source:
+        type: choice
+        options: [manual, cron-job.org]
+        default: manual
+        description: Which scheduler started this check
 permissions:
   contents: read
 concurrency:
