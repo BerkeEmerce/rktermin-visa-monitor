@@ -1,3 +1,5 @@
+> **Live validation passed:** [run 43204998592](https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/43204998592) checked November and December 2026, found no available dates, then stopped normally when navigation did not advance beyond December. January was not reported as checked or empty. Two paid CAPTCHA answers were submitted: one rejected, one accepted. Result UNAVAILABLE, error null. Hourly monitoring and 2Captcha are enabled. There are 121 passing local tests. Prior deployment notes below are historical.
+
 > **Current update: hourly schedule + paid 2Captcha integration.** Local/API tests cover the new backend; live validation is pending the CAPTCHA_API_KEY secret. Recurring checks are paused until you run `scripts/enable-2captcha.ps1`. Existing Telegram/state setup is retained. See [TWOCAPTCHA_SETUP.md](TWOCAPTCHA_SETUP.md). Earlier OCR and zero-cost deployment notes below are historical.
 
 # Start here
