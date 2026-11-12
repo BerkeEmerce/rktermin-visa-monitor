@@ -9,15 +9,18 @@ from email_alerts import send_email
 from monitor_nicosia import notify_available
 
 
-def test_smtp_sends_to_requested_recipient(monkeypatch):
+@pytest.mark.parametrize("recipients", ["berkeemerce2002@gmail.com", "berkeemerce2002@gmail.com, emerce75@gmail.com"])
+def test_smtp_sends_to_requested_recipient(monkeypatch, recipients):
     for key, value in {"SMTP_HOST": "smtp.example.com", "SMTP_USERNAME": "sender", "SMTP_PASSWORD": "secret",
-                       "EMAIL_FROM": "sender@example.com", "EMAIL_TO": "berkeemerce2002@gmail.com", "SMTP_PORT": "465"}.items():
+                       "EMAIL_FROM": "sender@example.com", "EMAIL_TO": recipients, "SMTP_PORT": "465"}.items():
         monkeypatch.setenv(key, value)
     with patch("email_alerts.smtplib.SMTP_SSL") as connection:
         smtp = connection.return_value.__enter__.return_value
         smtp.send_message.return_value = {}
         send_email("Available on 03.01.2027")
-        assert smtp.send_message.call_args.args[0]["To"] == "berkeemerce2002@gmail.com"
+        from email.utils import getaddresses
+        message = smtp.send_message.call_args.args[0]
+        assert [address for _, address in getaddresses(message.get_all("To"))] == recipients.split(", ")
 
 
 @pytest.mark.parametrize("failed", ["telegram", "send_email", None])

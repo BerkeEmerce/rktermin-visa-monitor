@@ -44,7 +44,7 @@ jobs:
       SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
       SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
       EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-      EMAIL_TO: berkeemerce2002@gmail.com
+      EMAIL_TO: berkeemerce2002@gmail.com, emerce75@gmail.com
     steps:
       - uses: actions/checkout@v4
         with:

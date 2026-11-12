@@ -26,5 +26,5 @@ jobs:
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-          EMAIL_TO: berkeemerce2002@gmail.com
+          EMAIL_TO: berkeemerce2002@gmail.com, emerce75@gmail.com
         run: python vendor/visa-termin-master/email_alerts.py
