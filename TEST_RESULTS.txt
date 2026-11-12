@@ -1,0 +1,11 @@
+Local validation: 12 November 2026
+Python: CPython 3.12.16 on Windows
+Command: python -m pytest tests -q
+
+........................................................................ [ 73%]
+..........................                                               [100%]
+98 passed in 1.74s
+
+Workflow lint: actionlint v1.7.12, both workflows, exit 0, no findings.
+Dependency check: uv pip check; all 22 installed packages compatible.
+No Ubuntu Actions run, live Telegram delivery or CAPTCHA acceptance was verified.

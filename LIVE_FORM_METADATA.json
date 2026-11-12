@@ -1,0 +1,83 @@
+{
+  "headings": [],
+  "forms": [
+    {
+      "id": "appointment_captcha_month",
+      "action_endpoint": "appointment_showMonth.do",
+      "method": "post",
+      "fields": [
+        {
+          "name": "action:appointment_refreshCaptchamonth",
+          "type": "submit"
+        },
+        {
+          "name": "captchaText",
+          "type": "text"
+        },
+        {
+          "name": "rebooking",
+          "type": "hidden"
+        },
+        {
+          "name": "token",
+          "type": "hidden"
+        },
+        {
+          "name": "lastname",
+          "type": "hidden"
+        },
+        {
+          "name": "firstname",
+          "type": "hidden"
+        },
+        {
+          "name": "email",
+          "type": "hidden"
+        },
+        {
+          "name": "locationCode",
+          "type": "hidden"
+        },
+        {
+          "name": "realmId",
+          "type": "hidden"
+        },
+        {
+          "name": "categoryId",
+          "type": "hidden"
+        },
+        {
+          "name": "openingPeriodId",
+          "type": "hidden"
+        },
+        {
+          "name": "date",
+          "type": "hidden"
+        },
+        {
+          "name": "dateStr",
+          "type": "hidden"
+        },
+        {
+          "name": "action:appointment_showMonth",
+          "type": "submit"
+        },
+        {
+          "name": "action:choose_category",
+          "type": "submit"
+        }
+      ]
+    }
+  ],
+  "robots_delay": 0,
+  "captcha": {
+    "format": "JPEG",
+    "dimensions": [
+      300,
+      50
+    ],
+    "bytes": 5338,
+    "embedded": true
+  },
+  "form_adapter": "matched"
+}

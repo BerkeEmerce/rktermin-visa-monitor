@@ -1,0 +1,81 @@
+name: Visa appointment monitor
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [diagnostic, telegram-test, monitor]
+        default: diagnostic
+        description: Diagnostic, Telegram test, or monitor
+      initialize_state:
+        type: boolean
+        default: false
+        description: Initialize state once (manual monitor only)
+permissions:
+  contents: write
+concurrency:
+  group: visa-monitor
+  cancel-in-progress: false
+jobs:
+  check:
+    if: >-
+      github.event.repository.private == false &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      (github.event_name == 'workflow_dispatch' || vars.MONITOR_ENABLED == 'true')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      LOCATION_CODE: ${{ vars.LOCATION_CODE || 'niko' }}
+      REALM_ID: ${{ vars.REALM_ID || '926' }}
+      CATEGORY_ID: ${{ vars.CATEGORY_ID || '1860' }}
+      LOCATION_NAME: ${{ vars.LOCATION_NAME || 'North Nicosia' }}
+      TIMEZONE: ${{ vars.TIMEZONE || 'Asia/Nicosia' }}
+      MONTHS_TO_CHECK: '3'
+      CHECK_INTERVAL_MINUTES: ${{ vars.CHECK_INTERVAL_MINUTES || '15' }}
+      MAX_CAPTCHA_ATTEMPTS: '2'
+      REQUEST_TIMEOUT_SECONDS: '20'
+      CAPTCHA_MODE: ${{ vars.CAPTCHA_MODE || 'disabled' }}
+      OCR_PERMISSION_CONFIRMED: ${{ vars.OCR_PERMISSION_CONFIRMED || 'false' }}
+      FAILURE_ALERT_THRESHOLD: ${{ vars.FAILURE_ALERT_THRESHOLD || '3' }}
+      STALE_AFTER_HOURS: ${{ vars.STALE_AFTER_HOURS || '6' }}
+      OPERATIONAL_ALERT_HOURS: ${{ vars.OPERATIONAL_ALERT_HOURS || '24' }}
+      ACCESS_COOLDOWN_HOURS: ${{ vars.ACCESS_COOLDOWN_HOURS || '24' }}
+      DAILY_SUMMARY: ${{ vars.DAILY_SUMMARY || 'true' }}
+      DRY_RUN: 'false'
+      AUTO_BOOK: 'false'
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      GH_TOKEN: ${{ github.token }}
+      MODE: ${{ inputs.mode || 'monitor' }}
+      INITIALIZE: ${{ inputs.initialize_state && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Python dependencies
+        run: python -m pip install .
+      - name: Install optional local OCR
+        if: env.CAPTCHA_MODE == 'ocr' && env.OCR_PERMISSION_CONFIRMED == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends tesseract-ocr
+          python -m pip install '.[ocr]'
+      - name: Run selected mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$MODE" in
+            diagnostic) python -m visa_monitor.main diagnostic ;;
+            telegram-test) python -m visa_monitor.main telegram-test ;;
+            monitor)
+              args=(check --github-state)
+              if [[ "$INITIALIZE" == 'true' ]]; then args+=(--initialize-state); fi
+              python -m visa_monitor.main "${args[@]}"
+              ;;
+            *) exit 2 ;;
+          esac
