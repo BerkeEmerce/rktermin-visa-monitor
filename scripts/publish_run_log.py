@@ -84,11 +84,12 @@ def make_report(result,env,metadata,finished=None):
     }
 
 class History:
-    def __init__(self,repository,token):
+    def __init__(self,repository,token,branch="monitor-state"):
         if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+",repository) or not token:
             raise ValueError("Repository credentials missing")
         self.api = f"https://api.github.com/repos/{repository}"
         self.token = token
+        self.branch = branch
 
     def call(self,method,path,payload=None,missing=False):
         data = json.dumps(payload).encode() if payload is not None else None
@@ -108,10 +109,10 @@ class History:
 
     def update(self,path,transform):
         # Normal monitor execution is serialized by the workflow concurrency group.
-        current = self.call("GET",f"/contents/{quote(path)}?ref=monitor-state",missing=True)
+        current = self.call("GET",f"/contents/{quote(path)}?ref={quote(self.branch)}",missing=True)
         old = json.loads(base64.b64decode(current["content"]).decode()) if current else None
         value = transform(old)
-        payload = {"branch":"monitor-state","message":"Archive monitor run [skip ci]",
+        payload = {"branch":self.branch,"message":"Archive monitor run [skip ci]",
                    "content":base64.b64encode((json.dumps(value,sort_keys=True,indent=2)+"\n").encode()).decode()}
         if current:
             payload["sha"] = current["sha"]

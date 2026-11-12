@@ -8,11 +8,6 @@ on:
       - '.github/workflows/nicosia-upstream.yml'
       - 'vendor/visa-termin-master/**'
   workflow_dispatch:
-    inputs:
-      verify_setup:
-        type: boolean
-        default: false
-        description: Send a Telegram setup confirmation after the live check
 permissions:
   contents: read
 concurrency:
@@ -39,7 +34,6 @@ jobs:
       CAPTCHA_API_KEY: ${{ secrets.CAPTCHA_API_KEY }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      VERIFY_SETUP: ${{ (github.event_name == 'push' || inputs.verify_setup) && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,7 +49,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nicosia-result-${{ github.run_id }}
+          name: nicosia-result-${{ github.run_id }}-${{ github.run_attempt }}
           path: vendor/visa-termin-master/result.json
           if-no-files-found: ignore
           retention-days: 7

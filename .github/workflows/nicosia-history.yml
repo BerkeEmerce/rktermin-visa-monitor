@@ -1,0 +1,33 @@
+name: Archive Nicosia run history
+on:
+  workflow_run:
+    workflows: ['Nicosia upstream visa monitor']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: nicosia-history-writer
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Archive completed check, or backfill existing checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_RUN_ID: ${{ github.event.workflow_run.id }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
+            python scripts/archive_nicosia_run.py --backfill
+          else
+            python scripts/archive_nicosia_run.py
+          fi

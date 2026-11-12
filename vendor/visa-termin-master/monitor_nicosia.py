@@ -78,22 +78,12 @@ def main():
         if dates:
             telegram("Visa appointment available — North Nicosia\n" +
                      "\n".join(dates) + "\nBook manually: " + PORTAL_URL)
-        if os.environ.get("VERIFY_SETUP") == "true":
-            telegram("Nicosia visa monitor: setup test passed.\n"
-                     "CAPTCHA accepted; current portal month checked.\n" +
-                     ("Available dates: " + ", ".join(dates) if dates else "No appointments available.") +
-                     "\nCloud schedule: every 30 minutes. Notifications only.")
     except Exception as error:
         # Exception text from upstream could contain sensitive request data.
         # Only our explicit operational messages are included in the result.
         message = str(error) if isinstance(error, RuntimeError) else "Unexpected check failure"
         result.update(status="failed", error=message)
         exit_code = 1
-        try:
-            telegram("Nicosia visa monitor failed: " + message +
-                     "\nAvailability is unknown. Check GitHub Actions.")
-        except RuntimeError:
-            pass
     Path("result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result))
     if os.environ.get("GITHUB_STEP_SUMMARY"):
