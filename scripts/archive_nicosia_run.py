@@ -50,7 +50,7 @@ def artifact_result(history, metadata, include_snapshots=False):
             html = {}
             for snapshot in result.get("snapshots", []):
                 name = snapshot.get("file", "")
-                if not re.fullmatch(r"response-0[1-5]\.html", name):
+                if not re.fullmatch(r"response-(?:0[1-9]|1[0-9]|2[0-5])\.html", name):
                     continue
                 entry = archive.getinfo("target/snapshots/" + name)
                 if entry.file_size > 524288:

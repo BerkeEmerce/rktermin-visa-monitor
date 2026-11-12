@@ -7,6 +7,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse, urljoin
+from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup
@@ -18,6 +19,7 @@ from response_snapshots import capture
 
 PORTAL_URL = ("https://service2.diplo.de/rktermin/extern/appointment_showMonth.do"
               "?locationCode=niko&realmId=926&categoryId=1860")
+MAX_ARROW_REQUESTS = 24
 
 
 def telegram(message):
@@ -126,66 +128,58 @@ def adjacent_month(current, step):
     return f"{year:04d}-{month + 1:02d}"
 
 
+def current_month():
+    return datetime.now(ZoneInfo("Asia/Famagusta")).strftime("%Y-%m")
+
+
 def check_months(handler, result, response_path=Path("target/response.html")):
-    """Try back once, then scan forward without retrying a blocked arrow."""
+    """Reach this month's calendar, then check forward until an arrow stops."""
+    target = current_month()  # Keep one local month for the entire scan.
     html = response_path.read_text(encoding="utf-8")
     capture(html, result, "After CAPTCHA", directory=response_path.parent / "snapshots")
-    result.update(months=[], navigation=[], dates=[])
-    current = displayed_month(html)
-    available_dates(html)  # Validate the accepted calendar before navigating.
-    previous = adjacent_month(current, -1)
-    back = calendar_arrow(html, "previous")
-    forward_moves = 2
-    notes = []
-    if back:
-        if not handler._curl(back, str(response_path)):
-            raise RuntimeError("Back-arrow request failed")
-        html = response_path.read_text(encoding="utf-8")
-        capture(html, result, "After back-arrow attempt", requested=previous,
-                directory=response_path.parent / "snapshots")
-        observed = displayed_month(html)
-        available_dates(html)
-        if observed not in (current, previous):
-            raise RuntimeError("Back arrow displayed an unexpected calendar month")
-        result["navigation"].append({"direction": "back", "from": current, "requested": previous,
-                                     "displayed": observed, "status": "stayed" if observed == current else "advanced"})
-        if observed == previous:
-            notes.append(f"Back arrow reached {previous}.")
-            forward_moves = 3
-        else:
-            notes.append(f"Back arrow stayed on {current}; {previous} was not checked.")
-        current = observed
-    else:
-        notes.append(f"No back arrow after {current}; {previous} was not checked.")
-        result["navigation"].append({"direction": "back", "from": current, "requested": previous,
-                                     "displayed": current, "status": "no_arrow"})
-    for index in range(forward_moves + 1):
+    result.update(start_month=target, months=[], navigation=[], dates=[])
+    anchored, notes = False, []
+    for moves in range(MAX_ARROW_REQUESTS + 1):
+        current = displayed_month(html)
         dates = available_dates(html)
-        result["months"].append({"month": current, "checked": True, "dates": dates})
-        result["dates"] = sorted(set(result["dates"] + dates), key=lambda d: datetime.strptime(d, "%d.%m.%Y"))
-        if index == forward_moves:
+        if not anchored and current == target:
+            anchored = True
+            if moves:
+                notes.append(f"Reached current month {target}.")
+        if anchored:
+            result["months"].append({"month": current, "checked": True, "dates": dates})
+            result["dates"] = sorted(set(result["dates"] + dates), key=lambda d: datetime.strptime(d, "%d.%m.%Y"))
+        direction = "back" if not anchored and current > target else "next"
+        expected = adjacent_month(current, -1 if direction == "back" else 1)
+        if moves == MAX_ARROW_REQUESTS:
+            if not anchored:
+                raise RuntimeError(f"Could not reach current month {target} within the arrow limit")
+            notes.append(f"Stopped at the {MAX_ARROW_REQUESTS}-request safety limit; {expected} was not checked.")
             break
-        expected = adjacent_month(current, 1)
-        arrow = next_arrow(html)
+        arrow = calendar_arrow(html, "previous" if direction == "back" else "next")
         if not arrow:
-            result["navigation"].append({"direction": "next", "from": current, "requested": expected, "displayed": current, "status": "no_arrow"})
+            result["navigation"].append({"direction": direction, "from": current, "requested": expected,
+                                         "displayed": current, "status": "no_arrow"})
+            if not anchored:
+                raise RuntimeError(f"Could not reach current month {target}; no {direction} arrow after {current}")
             notes.append(f"No next-month arrow after {current}; {expected} was not checked.")
             break
         if not handler._curl(arrow, str(response_path)):
-            raise RuntimeError("Next-month arrow request failed")
+            raise RuntimeError("Calendar-arrow request failed")
         html = response_path.read_text(encoding="utf-8")
-        capture(html, result, f"After next-arrow attempt {index + 1}", requested=expected,
+        capture(html, result, f"After {direction} arrow", requested=expected,
                 directory=response_path.parent / "snapshots")
         observed = displayed_month(html)
         available_dates(html)  # A CAPTCHA or error page is never a normal stop.
-        result["navigation"].append({"direction": "next", "from": current, "requested": expected, "displayed": observed,
-                                     "status": "stayed" if observed == current else "advanced"})
+        if observed not in (current, expected):
+            raise RuntimeError("Calendar arrow displayed an unexpected calendar month")
+        result["navigation"].append({"direction": direction, "from": current, "requested": expected,
+                                     "displayed": observed, "status": "stayed" if observed == current else "advanced"})
         if observed == current:
+            if not anchored:
+                raise RuntimeError(f"Could not reach current month {target}; the portal stayed on {current}")
             notes.append(f"Tried {expected} once; the portal stayed on {current}. {expected} was not checked.")
             break
-        if observed != expected:
-            raise RuntimeError("Next arrow displayed an unexpected calendar month")
-        current = observed
     result["navigation_note"] = " ".join(notes)
     return result["dates"]
 
@@ -193,7 +187,7 @@ def check_months(handler, result, response_path=Path("target/response.html")):
 def main():
     result = {"checked_at": datetime.now(timezone.utc).isoformat(),
               "target": "niko:926:1860", "auto_book": False,
-              "coverage": "one back-arrow attempt, then up to three forward-arrow moves"}
+              "coverage": "current local month onward until blocked, with a 24-arrow safety limit"}
     exit_code = 0
     try:
         for name in ("CAPTCHA_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"):

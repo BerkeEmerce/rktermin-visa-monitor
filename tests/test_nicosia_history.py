@@ -65,14 +65,14 @@ def test_archive_keeps_checked_months_and_normal_navigation_stop():
     assert value["navigation_note"] == result["navigation_note"]
 
 
-def test_artifact_reader_keeps_all_five_navigation_snapshots(monkeypatch):
+def test_artifact_reader_keeps_all_navigation_snapshots(monkeypatch):
     import io
     import json
     import zipfile
     from unittest.mock import Mock, MagicMock
     import archive_nicosia_run
 
-    result = {"status": "ok", "snapshots": [{"file": f"response-{n:02d}.html"} for n in range(1, 6)]}
+    result = {"status": "ok", "snapshots": [{"file": f"response-{n:02d}.html"} for n in range(1, 26)]}
     payload = io.BytesIO()
     with zipfile.ZipFile(payload, "w") as archive:
         archive.writestr("result.json", json.dumps(result))
@@ -86,5 +86,5 @@ def test_artifact_reader_keeps_all_five_navigation_snapshots(monkeypatch):
     history.call.return_value = {"artifacts": [{"name": "nicosia-result-12345-1", "expired": False,
                                                "created_at": "2026-11-12", "archive_download_url": "https://example.com/artifact"}]}
     restored = archive_nicosia_run.artifact_result(history, metadata(), include_snapshots=True)
-    assert len(restored["_snapshot_html"]) == 5
-    assert restored["_snapshot_html"]["response-05.html"] == "<h2>1/2099</h2>"
+    assert len(restored["_snapshot_html"]) == 25
+    assert restored["_snapshot_html"]["response-25.html"] == "<h2>1/2099</h2>"
