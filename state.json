@@ -12,6 +12,8 @@
   },
   "daily_successes": 1,
   "day": "2026-11-12",
+  "delivery_errors": {},
+  "email_notified_dates": [],
   "failures": 0,
   "first_run": "2026-11-12T04:04:41.635776+02:00",
   "last_check": "2026-11-12T13:27:44.010224+02:00",
