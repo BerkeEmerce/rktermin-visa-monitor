@@ -1,0 +1,61 @@
+name: Nicosia upstream visa monitor
+on:
+  schedule:
+    - cron: '27,57 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/nicosia-upstream.yml'
+      - 'vendor/visa-termin-master/**'
+  workflow_dispatch:
+    inputs:
+      verify_setup:
+        type: boolean
+        default: false
+        description: Send a Telegram setup confirmation after the live check
+permissions:
+  contents: read
+concurrency:
+  group: nicosia-upstream-monitor
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: vendor/visa-termin-master
+    env:
+      LOCATION_CODE: niko
+      REALM_ID: '926'
+      CATEGORY_ID: '1860'
+      EMBASSY_LOCATION: niko
+      EARLIEST_DATE: ''
+      LATEST_DATE: ''
+      ACCEPTED_WEEKDAYS: ''
+      AUTO_BOOK: 'false'
+      BOOKING_DRY_RUN: 'true'
+      CAPTCHA_MAX_ATTEMPTS: '3'
+      CAPTCHA_API_KEY: ${{ secrets.CAPTCHA_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      VERIFY_SETUP: ${{ (github.event_name == 'push' || inputs.verify_setup) && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install beautifulsoup4==4.15.0 requests==2.34.2
+      - name: Run notification-only check
+        run: python monitor_nicosia.py
+      - name: Keep sanitized check result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nicosia-result-${{ github.run_id }}
+          path: vendor/visa-termin-master/result.json
+          if-no-files-found: ignore
+          retention-days: 7

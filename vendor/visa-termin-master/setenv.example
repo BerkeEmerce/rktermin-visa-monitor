@@ -1,0 +1,243 @@
+#!/bin/bash
+
+################################################################################
+# Visa Appointment Helper - Configuration File (setenv.example)
+# Copy this to ./setenv and customize for your needs
+# 
+# UNIVERSAL MODE: This configuration works for all visa types
+# Simply change VISA_TYPE to switch between different visa categories
+################################################################################
+
+# Root folder (usually the project directory)
+export ROOT_FOLDER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+################################################################################
+# UNIVERSAL CONFIGURATION - One setting for all visa types
+################################################################################
+
+# Embassy Location (e.g., 'kiew', 'berlin', 'moscow', 'istanbul', 'warsaw')
+# The system will automatically use the correct category IDs for your location
+export EMBASSY_LOCATION="kiew"
+
+# Visa Type to monitor - CHANGE THIS TO SWITCH VISA TYPES
+# Available options:
+#   - schengen    : Schengen short-stay visa (up to 90 days, C visa)
+#   - work        : Employment visa (D visa)
+#   - study       : Study visa (D visa)
+#   - family      : Family reunion visa (D visa)
+#   - residence   : General residence permit (D visa)
+#   - auto        : Monitor all visa types (advanced)
+export VISA_TYPE="schengen"
+
+# Portal entry point. The default below is the live German appointment system
+# and is correct for every embassy - you normally do NOT need to change it.
+# (The old vis.diplo.de/rktermin/frontend/ address is dead: it redirects to a
+# generic Auswaertiges Amt page with no booking system behind it.)
+# export CONSULATE_BASE_URL="https://service2.diplo.de/rktermin/extern/appointment_showMonth.do"
+
+################################################################################
+# Date Filtering Configuration
+# Customize to match your visa appointment needs
+################################################################################
+
+# For Schengen visas: acceptable appointment dates
+# Examples: March after 24th or April before 24th
+# Edit lib/config.py function is_acceptable_date() for complex logic
+
+# For D visas: usually more flexible
+# Set dates according to your study start date, work contract, etc.
+
+# This is configured in lib/config.py - modify the is_acceptable_date() function
+# to match your specific requirements
+
+################################################################################
+# WHICH APPOINTMENT TO WATCH  (REQUIRED)
+#
+# Works identically for Schengen (C) and national (D) visas - only the IDs
+# differ. Find yours by opening the portal in a browser and reading the URL:
+#
+#   https://service2.diplo.de/rktermin/extern/choose_realmList.do?locationCode=XXXX
+#
+# then click through to your visa category. The final URL contains all three:
+#   ...?locationCode=kual&realmId=502&categoryId=1761
+################################################################################
+
+export LOCATION_CODE="kual"     # embassy code from the portal URL
+export REALM_ID="502"           # visa section (differs between C and D)
+export CATEGORY_ID="1761"       # the specific visa category
+
+# Watch SEVERAL categories in one run - e.g. a C and a D visa together.
+# Format: locationCode:realmId:categoryId, comma separated.
+# When set, this overrides the three variables above.
+# export VISA_TARGETS="kiew:561:1497,kiew:562:1785"
+
+################################################################################
+# WHICH DATES TO ACCEPT
+# Any appointment inside this window is taken. Format DD.MM.YYYY.
+################################################################################
+
+# Earliest acceptable date (default: today)
+export EARLIEST_DATE=""
+
+# Latest acceptable date (default: no limit)
+export LATEST_DATE=""
+
+# Optional: restrict to certain weekdays (0=Mon .. 6=Sun)
+# export ACCEPTED_WEEKDAYS="0,1,2,3,4"
+
+################################################################################
+# Telegram Notification Settings
+################################################################################
+
+# Your Telegram Bot Token
+# Create a bot with BotFather: https://t.me/botfather
+export TELEGRAM_BOT_TOKEN="your_bot_token_here"
+
+# Chat ID where to send notifications
+# Send a message to your bot and get the chat_id
+export TELEGRAM_CHAT_ID="your_chat_id_here"
+
+################################################################################
+# Captcha Solving (2Captcha)
+################################################################################
+
+# 2Captcha API key - REQUIRED for captcha solving
+# Register and top up at: https://2captcha.com/enterpage
+# The key is on the dashboard right after signup
+export CAPTCHA_API_KEY="your_2captcha_api_key"
+
+# Solver provider (only '2captcha' is implemented)
+export CAPTCHA_PROVIDER="2captcha"
+
+# Seconds to wait for a solution before giving up (image captchas: ~10-30s)
+export CAPTCHA_TIMEOUT="120"
+
+# Optional: seconds between result polls
+# export CAPTCHA_POLL_INTERVAL="5"
+
+# Optional: per-HTTP-request timeout
+# export CAPTCHA_HTTP_TIMEOUT="30"
+
+# Optional: ask workers to respect letter case (recommended, default true)
+# export CAPTCHA_CASE_SENSITIVE="true"
+
+# Optional: character set hint - 0=any, 1=digits only, 2=letters only
+# export CAPTCHA_NUMERIC="0"
+
+# Optional: expected answer length (0 = unconstrained)
+# export CAPTCHA_MIN_LENGTH="0"
+# export CAPTCHA_MAX_LENGTH="0"
+
+# Optional: report wrong solutions to get them refunded (default true)
+# export CAPTCHA_REPORT_BAD="true"
+
+# Optional: use a 2Captcha-compatible service instead
+# export CAPTCHA_API_URL="https://2captcha.com/in.php"
+# export CAPTCHA_RESULT_URL="https://2captcha.com/res.php"
+
+################################################################################
+# AUTO-BOOKING
+#
+# READ THIS: a successful booking is a REAL appointment at a REAL consulate,
+# recorded under the applicant details below. There is no test mode on the
+# portal. Unattended bookings can get the applicant blocked from booking again.
+################################################################################
+
+# Details written into the actual appointment record. All required to book.
+export APPLICANT_LASTNAME=""
+export APPLICANT_FIRSTNAME=""
+
+# The confirmation mail goes here. It carries the cancellation link, which is
+# the ONLY way to cancel - keep access to this mailbox.
+export APPLICANT_EMAIL=""
+
+# Must be the real passport number: it is printed on the confirmation, checked
+# at the door, and blocked from future bookings after a no-show.
+export APPLICANT_PASSPORT=""
+
+# Many embassies also ask for these on the booking form.
+export APPLICANT_BIRTHDATE=""        # DD.MM.YYYY
+export APPLICANT_PHONE=""
+
+# Purpose of the journey, where the form offers a dropdown. THIS is how a
+# family-reunion D visa is chosen - it is an option on the form, not a separate
+# category. A fragment is enough; it is matched against the option text.
+# Baku's national visa offers, for example:
+#   "Ailə birləşməsi / Familienzusammenführung / family reunion"
+#   "Au pair"
+#   "Könullülük Xidməti / Freiwilligendienst / Voluntary Service"
+#   "və s. / sonstiges / other"
+# export APPLICANT_PURPOSE="family reunion"
+
+# Escape hatch: if a dry run warns that fields were left empty, set them here
+# by their exact form field name.
+# export APPLICANT_EXTRA_FIELDS="fields[0].content=C01548134"
+
+# Book automatically as soon as an acceptable date is found (true/false)
+export AUTO_BOOK="false"
+
+# Dry run: walks the ENTIRE booking flow against the live portal - opens the
+# day, picks a slot, solves the booking captcha, builds the exact POST - then
+# stops without submitting and logs precisely what it would have sent.
+# Keep this "true" until you have seen a dry run succeed.
+export BOOKING_DRY_RUN="true"
+
+# How many times to retry a misread captcha before giving up.
+# Solvers miss roughly 1 in 4 of these, and one miss must not cost a free slot.
+export CAPTCHA_MAX_ATTEMPTS="3"
+
+################################################################################
+# Optional: Advanced Settings
+################################################################################
+
+# Portal Auto-Detection (automatic, no need to change)
+# The system automatically detects legacy and new German embassy portals
+# and adapts the booking process accordingly
+
+# Logging Level (optional)
+# export LOG_LEVEL="DEBUG"  # For verbose logging
+# export LOG_LEVEL="INFO"   # Default
+
+# Check frequency when used with cron (optional)
+# Default: checks on demand when run
+# Cron example: */30 8-17 * * 1-5 = every 30 mins during business hours
+
+################################################################################
+# QUICK START EXAMPLES
+################################################################################
+
+# Example 1: Monitor Schengen appointments at Kyiv embassy
+# VISA_TYPE="schengen"
+# EMBASSY_LOCATION="kiew"
+
+# Example 2: Monitor D visa (work) appointments at Kyiv embassy
+# VISA_TYPE="work"
+# EMBASSY_LOCATION="kiew"
+
+# Example 3: Monitor study visa at Berlin embassy
+# VISA_TYPE="study"
+# EMBASSY_LOCATION="berlin"
+
+################################################################################
+# SUPPORTED EMBASSY LOCATIONS
+################################################################################
+
+# This tool supports all German embassies, including:
+# - kiew (Kyiv, Ukraine) - Default
+# - berlin (Berlin, Germany)
+# - moscow (Moscow, Russia)
+# - istanbul (Istanbul, Turkey)
+# - warsaw (Warsaw, Poland)
+# - and many more...
+#
+# For other locations, you may need to manually override CONSULATE_DETAILS,
+# LOCATION_CODE, CATEGORY_ID, etc.
+
+################################################################################
+# DOCUMENTATION
+################################################################################
+
+# Full documentation in:
+# - README.md         : Quick start guide
+# - REFACTORING.md    : Architecture and new features
+# - DEVELOPER.md      : Developer guide for customization
