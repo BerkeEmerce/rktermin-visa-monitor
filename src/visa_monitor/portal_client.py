@@ -4,7 +4,7 @@ from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
 import requests
-from .calendar_parser import endpoint, has_captcha, parse_calendar, portal_url, verify_target
+from .calendar_parser import CALENDAR_FORM_ACTIONS, endpoint, has_captcha, parse_calendar, portal_url, verify_target
 from .captcha import LocalOCR, extract_challenge, fingerprint, image_bytes
 from .models import CheckError, Status
 from .neural_ocr import NeuralOCR
@@ -31,7 +31,7 @@ class Transport:
         parsed = urlsplit(url)
         if parsed.scheme!="https" or parsed.netloc!="service2.diplo.de":
             raise CheckError(Status.PARSE_ERROR,"Refusing off-site request")
-        if method=="POST" and endpoint(url) not in ("appointment_showMonth.do","appointment_captcha.do"):
+        if method=="POST" and endpoint(url) not in CALENDAR_FORM_ACTIONS:
             raise CheckError(Status.PARSE_ERROR,"Refusing booking or unexpected POST")
         if not robots_request and self.robots and not self.robots.can_fetch(USER_AGENT,url):
             raise CheckError(Status.ACCESS_BLOCKED,"robots.txt disallows requested URL")
@@ -73,7 +73,7 @@ class Transport:
             if not response.is_redirect:
                 return response.text,response.url or url
             target = portal_url(response.headers.get("Location",""),url)
-            if endpoint(target) not in ("appointment_showMonth.do","appointment_captcha.do"):
+            if endpoint(target) not in CALENDAR_FORM_ACTIONS:
                 raise CheckError(Status.PARSE_ERROR,"Unexpected portal redirect; adapter review required")
             if response.status_code in (301,302,303):
                 method,data = "GET",None
@@ -110,7 +110,7 @@ class PortalClient:
         self.transport.check_robots()
         html,url = self.transport.page("GET",self.config.month_url(month))
         seen = set()
-        for _ in range(self.config.captcha_attempts):
+        for attempt in range(self.config.captcha_attempts):
             if not has_captcha(html):
                 parse_calendar(html,url,month,today,self.config)
                 return html,url
@@ -132,6 +132,10 @@ class PortalClient:
             if isinstance(details, dict):
                 self.metrics["ocr"] = dict(details)
             if not value:
+                if attempt + 1 < self.config.captcha_attempts and challenge.refresh_fields:
+                    html,url = self.transport.page("POST",challenge.action,challenge.refresh_fields)
+                    self.metrics["refreshed"] = self.metrics.get("refreshed", 0) + 1
+                    continue
                 reason = getattr(self.ocr, "last_error", None)
                 if not isinstance(reason, str) or not reason:
                     reason = "Local OCR produced no reliable candidate"

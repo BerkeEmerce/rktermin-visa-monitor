@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 dependencies = ["requests==2.32.5", "beautifulsoup4==4.14.2", "tzdata==2025.2"]
 [project.optional-dependencies]
 neural = ["ddddocr==1.6.1", "onnxruntime==1.31.1", "Pillow==12.0.0", "opencv-python-headless==4.12.0.88; sys_platform == 'linux'", "opencv-python==4.12.0.88; sys_platform != 'linux'"]
-ocr = ["Pillow==12.0.0", "opencv-python-headless==4.12.0.88", "pytesseract==0.3.13"]
+ocr = ["Pillow==12.0.0", "opencv-python-headless==4.12.0.88; sys_platform == 'linux'", "opencv-python==4.12.0.88; sys_platform != 'linux'", "pytesseract==0.3.13"]
 test = ["pytest==8.4.2", "responses==0.25.8", "PyYAML==6.0.3"]
 [project.scripts]
 visa-monitor = "visa_monitor.main:main"

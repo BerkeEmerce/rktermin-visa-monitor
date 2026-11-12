@@ -6,7 +6,7 @@ Configured for North Nicosia: `locationCode=niko`, `realmId=926`, `categoryId=18
 
 See [START_HERE.md](START_HERE.md) for setup and [VALIDATION_REPORT.md](VALIDATION_REPORT.md) for what has actually been verified.
 
-The optional CPU-only neural backend is selected with `OCR_ENGINE=neural` and installed with `python -m pip install '.[neural]'`. It uses the packaged MIT-licensed ddddocr model locally, without a paid API or runtime model download. `CAPTCHA_EXPECTED_LENGTH=6` validates the output format. The model score is a heuristic; only an accepted server response followed by calendar evidence establishes success. Tesseract remains available through `OCR_ENGINE=tesseract`. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The optional CPU-only neural backend is selected with `OCR_ENGINE=neural` and installed with `python -m pip install '.[neural]'`. It uses both packaged MIT-licensed ddddocr models locally, without a paid API or runtime model download, and requires exact agreement between their readings. `CAPTCHA_EXPECTED_LENGTH=6` validates the output format. The model score is a heuristic; only an accepted server response followed by calendar evidence establishes success. One unreadable image can be refreshed through the portal's own form; the two-image/two-answer ceiling still applies. Tesseract remains available through `OCR_ENGINE=tesseract`. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## What the implementation does
 

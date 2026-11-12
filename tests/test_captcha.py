@@ -95,3 +95,20 @@ def test_duplicate_category_refused(fixture,config):
     client = PortalClient(config,FakeTransport([html]))
     with pytest.raises(CheckError,match="category mismatch"):
         client.open_calendar(MONTH,TODAY)
+
+
+def test_unreadable_image_refreshes_through_normal_form(fixture,config):
+    config = replace(config,captcha_mode="ocr",ocr_permitted=True)
+    first = fixture("captcha.html").replace('</form>', '<input type="submit" name="action:appointment_refreshCaptchamonth" value="New image"></form>')
+    second = first.replace("c2FtcGxlMQ==","c2FtcGxlMg==").replace("appointment_showMonth.do;", "appointment_refreshCaptchamonth.do;")
+    transport = FakeTransport([first,second,fixture("nov_empty.html")])
+    client = PortalClient(config,transport,Mock(recognize=Mock(side_effect=[None,"abc123"])))
+    client.open_calendar(MONTH,TODAY)
+    assert client.metrics["images"] == 2
+    assert client.metrics["refreshed"] == 1
+    assert client.metrics["submitted"] == 1
+    assert client.metrics["accepted"] == 1
+    refresh_fields = transport.calls[1][2]
+    assert ("action:appointment_refreshCaptchamonth", "New image") in refresh_fields
+    assert not any(name == "action:appointment_showMonth" for name,value in refresh_fields)
+    assert "appointment_refreshCaptchamonth.do;" in transport.calls[2][1]

@@ -11,7 +11,7 @@ import re
 class NeuralOCR:
     def __init__(self, expected_length=6):
         self.expected_length = expected_length
-        self.model = None
+        self.models = None
         self.last_error = None
         self.diagnostics = {"engine": "neural", "readings": 0}
 
@@ -37,29 +37,37 @@ class NeuralOCR:
         except Exception:
             self.last_error = "CAPTCHA image could not be decoded"
             return None
-        if self.model is None:
+        if self.models is None:
             try:
-                self.model = ddddocr.DdddOcr(show_ad=False, use_gpu=False)
+                self.models = [ddddocr.DdddOcr(show_ad=False, use_gpu=False, beta=beta)
+                               for beta in (False, True)]
             except Exception:
                 self.last_error = "Local neural OCR model initialization failed"
                 return None
         try:
-            # Use the original pixels first. Try contrast normalization only if
-            # that result fails basic format/score checks. Never submit a list.
+            # Reject high-scoring disagreements: the models' scores are not
+            # calibrated probabilities of correct full-string recognition.
             for image in (original, contrast):
-                result = self.model.classification(image, probability=True)
-                self.diagnostics["readings"] += 1
-                value = result.get("text", "")
-                score = float(result.get("confidence", 0))
-                if not isinstance(value, str) or not math.isfinite(score):
-                    continue
-                value = re.sub(r"\s", "", value)
-                self.diagnostics["candidate_length"] = len(value)
-                self.diagnostics["score"] = round(score, 4)
-                if re.fullmatch(r"[A-Za-z0-9]{%d}" % self.expected_length, value) and score >= 0.80:
-                    return value
+                values, scores = [], []
+                for model in self.models:
+                    result = model.classification(image, probability=True)
+                    self.diagnostics["readings"] += 1
+                    value = result.get("text", "")
+                    score = float(result.get("confidence", 0))
+                    if not isinstance(value, str) or not math.isfinite(score):
+                        values.append(None)
+                        continue
+                    value = re.sub(r"\s", "", value)
+                    scores.append(score)
+                    valid = re.fullmatch(r"[A-Za-z0-9]{%d}" % self.expected_length, value)
+                    values.append(value if valid and score >= 0.80 else None)
+                self.diagnostics["agreement"] = bool(values[0] and values[0] == values[1])
+                if self.diagnostics["agreement"]:
+                    self.diagnostics["candidate_length"] = len(values[0])
+                    self.diagnostics["score"] = round(min(scores), 4)
+                    return values[0]
         except Exception:
             self.last_error = "Local neural OCR inference failed"
             return None
-        self.last_error = "Local neural OCR returned no valid candidate"
+        self.last_error = "Local neural OCR models did not agree on a valid candidate"
         return None

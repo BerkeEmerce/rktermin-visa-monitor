@@ -5,7 +5,7 @@ import io
 import re
 from collections import Counter
 from dataclasses import dataclass
-from .calendar_parser import endpoint, portal_url, soup
+from .calendar_parser import CALENDAR_FORM_ACTIONS, endpoint, portal_url, soup
 from .models import CheckError, Status
 
 @dataclass
@@ -13,13 +13,14 @@ class Challenge:
     action: str
     fields: list[tuple[str,str]]
     image: str
+    refresh_fields: list[tuple[str, str]] | None = None
 
 def extract_challenge(html,current):
     field = soup(html).select_one('input[name="captchaText"]')
     if field is None or (form:=field.find_parent("form")) is None:
         raise CheckError(Status.PARSE_ERROR,"Unrecognized CAPTCHA form")
     action = portal_url(form.get("action") or current,current)
-    if endpoint(action) not in ("appointment_showMonth.do","appointment_captcha.do"):
+    if endpoint(action) not in CALENDAR_FORM_ACTIONS:
         raise CheckError(Status.PARSE_ERROR,"Refusing non-calendar form submission")
     if form.get("method","get").lower()!="post":
         raise CheckError(Status.PARSE_ERROR,"Unexpected CAPTCHA form method")
@@ -32,6 +33,12 @@ def extract_challenge(html,current):
                if i.get("name")=="action:appointment_showMonth"]
     if len(submits)!=1:
         raise CheckError(Status.PARSE_ERROR,"Calendar CAPTCHA submit action not recognized")
+    refresh = [i for i in form.select('input[type="submit"],button[type="submit"]')
+               if i.get("name") == "action:appointment_refreshCaptchamonth"]
+    refresh_fields = None
+    if len(refresh) == 1:
+        refresh_fields = fields + [("captchaText", ""),
+            (refresh[0]["name"], refresh[0].get("value", refresh[0].get_text(strip=True)))]
     fields.append((submits[0]["name"],submits[0].get("value",submits[0].get_text(strip=True))))
     node = form.select_one("captcha img[src],img[src*='captcha' i],img[src^='data:image/']")
     image = node.get("src") if node else None
@@ -43,7 +50,7 @@ def extract_challenge(html,current):
                 break
     if not image:
         raise CheckError(Status.PARSE_ERROR,"CAPTCHA image not recognized")
-    return Challenge(action,fields,image)
+    return Challenge(action,fields,image,refresh_fields)
 
 def image_bytes(challenge,current,transport):
     if challenge.image.startswith("data:image/"):

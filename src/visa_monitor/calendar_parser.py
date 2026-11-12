@@ -11,6 +11,8 @@ NO_APPOINTMENTS = ("Unfortunately, there are no appointments available at this t
                    "New appointments will be made available for booking at regular intervals.")
 MONTH_NAMES = {n.lower():i for i,n in enumerate(calendar.month_name) if n}
 MONTH_NAMES.update(dict(zip("januar februar märz april mai juni juli august september oktober november dezember".split(),range(1,13))))
+CALENDAR_FORM_ACTIONS = frozenset(("appointment_showMonth.do", "appointment_captcha.do",
+                                   "appointment_refreshCaptchamonth.do"))
 
 def soup(html):
     return BeautifulSoup(html,"html.parser")
