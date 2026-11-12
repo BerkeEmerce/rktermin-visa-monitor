@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-12",
+  "runs": [
+    {
+      "attempt": 1,
+      "captcha": {},
+      "checked_at": "2026-11-12T13:50:21.073013+02:00",
+      "delivery_errors": {},
+      "email_configured": false,
+      "error": null,
+      "finished_at": "2026-11-12T11:50:22.399552+00:00",
+      "id": "43212548213:1",
+      "mode": "monitor",
+      "months": [
+        {
+          "available": null,
+          "checked": false,
+          "dates": [],
+          "month": "2026-11"
+        },
+        {
+          "available": null,
+          "checked": false,
+          "dates": [],
+          "month": "2026-12"
+        },
+        {
+          "available": null,
+          "checked": false,
+          "dates": [],
+          "month": "2027-01"
+        }
+      ],
+      "notification_error": false,
+      "reason": "Check interval or portal cooldown has not elapsed",
+      "run_id": "43212548213",
+      "run_url": "https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/43212548213/attempts/1",
+      "screenshot_available": false,
+      "source": "manual",
+      "started_at": "2026-11-12T11:50:09Z",
+      "status": "SKIPPED"
+    }
+  ],
+  "version": 1
+}
