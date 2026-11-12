@@ -36,7 +36,7 @@ jobs:
       CHECK_INTERVAL_MINUTES: ${{ vars.CHECK_INTERVAL_MINUTES || '60' }}
       MAX_CAPTCHA_ATTEMPTS: '2'
       REQUEST_TIMEOUT_SECONDS: '20'
-      CAPTCHA_MODE: ${{ vars.CAPTCHA_MODE || 'disabled' }}
+      CAPTCHA_MODE: ${{ vars.CAPTCHA_MODE || '2captcha' }}
       OCR_ENGINE: ${{ vars.OCR_ENGINE || 'tesseract' }}
       CAPTCHA_EXPECTED_LENGTH: ${{ vars.CAPTCHA_EXPECTED_LENGTH || '6' }}
       OCR_PERMISSION_CONFIRMED: ${{ vars.OCR_PERMISSION_CONFIRMED || 'false' }}

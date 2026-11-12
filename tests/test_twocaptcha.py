@@ -56,6 +56,7 @@ def test_invalid_solution_and_incorrect_report():
 
 
 def test_key_private_and_hourly_configuration():
+    assert Config.from_env({}).captcha_mode == "2captcha"
     config = Config.from_env({"CAPTCHA_MODE": "2captcha", "CAPTCHA_API_KEY": "PRIVATE_KEY"})
     assert config.interval == 60 and config.months == 3
     assert config.captcha_api_key == "PRIVATE_KEY"

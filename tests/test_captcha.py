@@ -21,7 +21,8 @@ def test_css_embedded_image(fixture,config):
     html = fixture("captcha.html").replace('<img src="data:image/png;base64,c2FtcGxlMQ==">',"<captcha><div style=\"background:url('data:image/png;base64,c2FtcGxlMQ==')\"></div></captcha>")
     assert extract_challenge(html,config.month_url(MONTH)).image.startswith("data:image/png")
 
-def test_default_no_submission(fixture,config):
+def test_disabled_no_submission(fixture,config):
+    config = replace(config,captcha_mode="disabled")
     transport = FakeTransport([fixture("captcha.html")])
     with pytest.raises(CheckError) as caught:
         PortalClient(config,transport).open_calendar(MONTH,TODAY)

@@ -26,7 +26,7 @@ class Config:
     delay: float = 3
     retries: int = 2
     dry_run: bool = True
-    captcha_mode: str = "disabled"
+    captcha_mode: str = "2captcha"
     ocr_engine: str = "tesseract"
     captcha_length: int = 6
     ocr_permitted: bool = False

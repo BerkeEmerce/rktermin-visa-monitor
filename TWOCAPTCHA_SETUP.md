@@ -1,5 +1,7 @@
 # Hourly checks with 2Captcha
 
+2Captcha solving is ON by default in both Python configuration and the cloud workflow. A funded CAPTCHA_API_KEY is required; a missing key fails safely. Set CAPTCHA_MODE=disabled to turn solving off. The deployed repository already has its API-key secret and hourly monitoring enabled.
+
 The monitor now supports the paid image-solving approach used by https://github.com/rashidisayev/visa-termin-master. Existing Telegram credentials and persistent state are retained. No automatic booking is enabled.
 
 The schedule runs at minute 7 of each hour (GitHub can delay execution). Each run checks the current month and next two months using the portal's navigation and Asia/Nicosia dates.
