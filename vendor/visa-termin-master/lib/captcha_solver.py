@@ -26,6 +26,10 @@ RETRYABLE_RESULTS = frozenset({
 })
 
 
+class FundsExhausted(RuntimeError):
+    """2Captcha explicitly refused a task because the account has no funds."""
+
+
 class TwoCaptchaSolver:
     """Solves image captchas through the 2Captcha API."""
 
@@ -69,6 +73,8 @@ class TwoCaptchaSolver:
             self.last_captcha_id = captcha_id
             return self._poll_result(captcha_id)
 
+        except FundsExhausted:
+            raise
         except Exception as e:
             self.logger.error(f"Error solving captcha via 2Captcha: {e}")
             return None
@@ -145,6 +151,8 @@ class TwoCaptchaSolver:
         response.raise_for_status()
         data = response.json()
 
+        if data.get("request") == "ERROR_ZERO_BALANCE":
+            raise FundsExhausted("2Captcha funds exhausted — top up required")
         if data.get("status") != 1 or not data.get("request"):
             self.logger.error(f"Captcha upload rejected by 2Captcha: {data}")
             return None

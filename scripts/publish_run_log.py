@@ -136,6 +136,9 @@ class History:
             previous["days"] = sorted(set(previous["days"])|{day},reverse=True)
             previous["updated_at"] = report["finished_at"]
             previous["email_configured"] = report["email_configured"]
+            funds = previous.get("captcha_funds") or {}
+            if report.get("captcha_funds_status") in {"usable", "exhausted"} and report["started_at"] >= funds.get("checked_at", ""):
+                previous["captcha_funds"] = {"status": report["captcha_funds_status"], "checked_at": report["started_at"]}
             return previous
         self.update("run-history/index.json",index)
 

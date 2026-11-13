@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 
 from lib import config, extractors
 from lib.appointment_handler import AppointmentHandler
+from lib.captcha_solver import FundsExhausted
 from email_alerts import send_email
 from response_snapshots import capture
 
@@ -40,14 +41,19 @@ def notify_available(dates):
         return
     text = ("Visa appointment available — North Nicosia\n" +
             "\n".join(dates) + "\nBook manually: " + PORTAL_URL)
+    notify(text)
+
+
+def notify(text, subject=None):
     failed = []
-    for name, send in (("Telegram", telegram), ("email", send_email)):
+    email = lambda body: send_email(body, subject=subject) if subject else send_email(body)
+    for name, send in (("Telegram", telegram), ("email", email)):
         try:
             send(text)
         except RuntimeError:
             failed.append(name)
     if failed:
-        raise RuntimeError("Appointment alert delivery failed for: " + ", ".join(failed))
+        raise RuntimeError("Alert delivery failed for: " + ", ".join(failed))
 
 
 def available_dates(html):
@@ -199,9 +205,21 @@ def main():
         handler = AppointmentHandler(str(Path.cwd()))
         if not handler.fetch_month_view():
             raise RuntimeError("Could not pass the portal CAPTCHA; availability is unknown")
+        result["captcha_funds_status"] = "usable"
         dates = check_months(handler, result)
         result.update(status="ok", dates=dates)
         notify_available(dates)
+    except FundsExhausted:
+        result.update(status="failed", captcha_funds_status="exhausted",
+                      error="2Captcha funds exhausted — top up required")
+        exit_code = 1
+        try:
+            notify("2Captcha funds exhausted — North Nicosia visa monitor\n"
+                   "2Captcha reported ERROR_ZERO_BALANCE. Top up your 2Captcha account.\n"
+                   "Appointments could not be checked. Automatic checks will keep trying on schedule.",
+                   subject="ACTION REQUIRED - 2Captcha funds exhausted")
+        except RuntimeError as error:
+            result["notification_error"] = str(error)
     except Exception as error:
         # Exception text from upstream could contain sensitive request data.
         # Only our explicit operational messages are included in the result.

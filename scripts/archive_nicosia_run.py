@@ -85,6 +85,8 @@ def report(metadata, result):
                     "dates": [d for d in m.get("dates", []) if isinstance(d, str) and re.fullmatch(r"\d{2}\.\d{2}\.\d{4}", d)]}
                    for m in result.get("months", []) if isinstance(m, dict) and re.fullmatch(r"\d{4}-\d{2}", str(m.get("month", "")))],
         "navigation_note": clean(result.get("navigation_note")),
+        "captcha_funds_status": result.get("captcha_funds_status") if result.get("captcha_funds_status") in {"usable", "exhausted"} else None,
+        "notification_error": clean(result.get("notification_error")),
         "snapshot_manifest": f"snapshots/runs/{run_id}-{attempt}.json" if result.get("snapshots") else None,
         "snapshot_capture_error": clean(result.get("snapshot_capture_error")),
         "workflow_conclusion": conclusion,

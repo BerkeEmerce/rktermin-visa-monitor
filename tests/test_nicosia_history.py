@@ -65,6 +65,30 @@ def test_archive_keeps_checked_months_and_normal_navigation_stop():
     assert value["navigation_note"] == result["navigation_note"]
 
 
+def test_exhausted_funds_is_archived_as_failed_not_no_appointments():
+    value = report(metadata("failure"), {"status": "failed", "captcha_funds_status": "exhausted",
+                                         "error": "2Captcha funds exhausted — top up required"})
+    assert value["status"] == "RUN_FAILED"
+    assert value["captcha_funds_status"] == "exhausted"
+    assert value["calendar_checked"] is False
+
+
+def test_funds_index_preserves_confirmed_state_and_recovers_after_top_up(monkeypatch):
+    from publish_run_log import History
+    history = History("example/repo", "test-token", branch="nicosia-history")
+    files = {}
+    def update(path, transform):
+        files[path] = transform(files.get(path))
+    monkeypatch.setattr(history, "update", update)
+    for stamp, state in [("13:00", "exhausted"), ("13:30", None), ("14:00", "usable"), ("12:00", "exhausted")]:
+        row = report(metadata(), {"captcha_funds_status": state})
+        row["started_at"] = "2026-11-13T" + stamp + ":00Z"
+        row["id"] = stamp
+        history.save(row)
+        expected = "exhausted" if stamp in {"13:00", "13:30"} else "usable"
+        assert files["run-history/index.json"]["captcha_funds"]["status"] == expected
+
+
 def test_artifact_reader_keeps_all_navigation_snapshots(monkeypatch):
     import io
     import json

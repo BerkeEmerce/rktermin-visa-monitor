@@ -57,6 +57,15 @@ class TestConfig:
 
 
 class TestSolveImage:
+    def test_zero_balance_is_propagated_without_polling(self, captcha_image):
+        solver = captcha_solver.TwoCaptchaSolver(api_key="test-key")
+        with patch("requests.post", return_value=_json_response({"status": 0, "request": "ERROR_ZERO_BALANCE"})) as post, \
+             patch("requests.get") as get:
+            with pytest.raises(captcha_solver.FundsExhausted):
+                solver.solve_image(captcha_image)
+            post.assert_called_once()
+            get.assert_not_called()
+
     def test_uploads_image_and_returns_answer(self, captcha_image):
         solver = captcha_solver.TwoCaptchaSolver(api_key="test-key")
 
