@@ -54,6 +54,7 @@ class AppointmentHandler:
         
         cmd = [
             "curl", "-v", "-L", "-s", "-S",
+            "--connect-timeout", "20", "--max-time", "45",
             "-A", config.USER_AGENT,
             "-b", cookies_path,
             "-c", cookies_path,
@@ -62,7 +63,13 @@ class AppointmentHandler:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            for attempt in range(1, 4):
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                # Retry only connection/DNS failures and timeouts, before solving.
+                if result.returncode not in (5, 6, 7, 28) or attempt == 3:
+                    break
+                self.logger.warning(f"Portal connection failed (attempt {attempt}/3); retrying in 5 seconds")
+                time.sleep(5)
 
             if result.returncode == 0:
                 self.logger.info(f"Captcha page saved to {output_file}")

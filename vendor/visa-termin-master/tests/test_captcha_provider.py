@@ -131,6 +131,44 @@ class TestSolveImage:
             assert solver.solve_image(captcha_image) is None
 
 
+class TestConnectionRetries:
+    @pytest.mark.parametrize("codes,success", [([0], True), ([28, 0], True), ([7, 6, 0], True),
+                                              ([5, 0], True), ([28, 28, 28], False), ([60], False)])
+    def test_initial_connection_has_at_most_two_retries(self, tmp_path, codes, success):
+        from lib.appointment_handler import AppointmentHandler
+        handler = AppointmentHandler(str(tmp_path))
+        responses = [MagicMock(returncode=code, stderr="test failure") for code in codes]
+        with patch("lib.appointment_handler.subprocess.run", side_effect=responses) as run, \
+             patch("lib.appointment_handler.time.sleep") as sleep:
+            assert handler.fetch_captcha_page() is success
+        assert run.call_count == len(codes)
+        assert sum(call.args == (5,) for call in sleep.call_args_list) == len(codes) - 1
+        cmd = run.call_args.args[0]
+        assert cmd[cmd.index("--connect-timeout") + 1] == "20"
+        assert cmd[cmd.index("--max-time") + 1] == "45"
+
+    def test_connection_retries_do_not_repeat_paid_captcha_solving(self, tmp_path):
+        from lib.appointment_handler import AppointmentHandler
+        handler = AppointmentHandler(str(tmp_path))
+        responses = [MagicMock(returncode=code, stderr="test failure") for code in (28, 7, 0)]
+        with patch("lib.appointment_handler.subprocess.run", side_effect=responses) as run, \
+             patch.object(handler, "solve_captcha", return_value="solved") as solve, \
+             patch.object(handler, "fetch_response_page", return_value=True), \
+             patch("lib.appointment_handler.extractors.captcha_was_rejected", return_value=False):
+            assert handler.fetch_month_view() is True
+        assert run.call_count == 3
+        solve.assert_called_once()
+
+    def test_exhausted_connection_retries_never_call_solver(self, tmp_path):
+        from lib.appointment_handler import AppointmentHandler
+        handler = AppointmentHandler(str(tmp_path))
+        with patch("lib.appointment_handler.subprocess.run", return_value=MagicMock(returncode=28, stderr="timeout")) as run, \
+             patch.object(handler, "solve_captcha") as solve:
+            assert handler.fetch_month_view() is False
+        assert run.call_count == 3
+        solve.assert_not_called()
+
+
 class TestReporting:
     def test_report_bad_uses_last_captcha_id(self):
         solver = captcha_solver.TwoCaptchaSolver(api_key="test-key")
