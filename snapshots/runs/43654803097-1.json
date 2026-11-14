@@ -1,0 +1,29 @@
+{
+  "attempt": 1,
+  "label": "Rendered snapshots of downloaded HTML; no additional portal visits",
+  "run_id": "43654803097",
+  "snapshots": [
+    {
+      "captured_at": "2026-11-14T23:45:49.124710+00:00",
+      "image": "snapshots/images/ef2836cb92cb3f26fe7249488d76c95cc597c70e2efcc7951f6295df0eecf95a.jpg",
+      "requested": null,
+      "response_sha256": "1a82dcc32fcaecec55d5b323f30f97baad0d9d4d0cd6b04f96bca6c61b6c99a3",
+      "stage": "After CAPTCHA"
+    },
+    {
+      "captured_at": "2026-11-14T23:45:49.732608+00:00",
+      "image": "snapshots/images/e03a7ee157e540028ffa09b3ad65b60f74328eccfb35f78e280ed61bc8bf25d2.jpg",
+      "requested": "2026-12",
+      "response_sha256": "48b8255add37045bd05bac28193458f24cb7e8ef249f2850d45a7d9b6e026c70",
+      "stage": "After next arrow"
+    },
+    {
+      "captured_at": "2026-11-14T23:45:50.294162+00:00",
+      "image": "snapshots/images/e03a7ee157e540028ffa09b3ad65b60f74328eccfb35f78e280ed61bc8bf25d2.jpg",
+      "requested": "2027-01",
+      "response_sha256": "6d81e7a254774b7be7efc35d130c9e1eae660420de6d212506a5a839ac73792a",
+      "stage": "After next arrow"
+    }
+  ],
+  "version": 1
+}
