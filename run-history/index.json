@@ -1,6 +1,6 @@
 {
   "captcha_funds": {
-    "checked_at": "2026-11-25T18:45:22Z",
+    "checked_at": "2026-11-25T19:15:21Z",
     "status": "usable"
   },
   "days": [
@@ -20,6 +20,6 @@
     "2026-11-12"
   ],
   "email_configured": false,
-  "updated_at": "2026-11-25T18:46:02Z",
+  "updated_at": "2026-11-25T19:16:05Z",
   "version": 1
 }
