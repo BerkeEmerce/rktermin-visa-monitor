@@ -5,6 +5,48 @@
       "attempt": 1,
       "calendar_checked": true,
       "captcha_funds_status": "usable",
+      "checked_at": "2026-11-27T18:45:47.106517+00:00",
+      "coverage": "current local month onward until blocked, with a 24-arrow safety limit",
+      "dates": [],
+      "email_configured": false,
+      "error": null,
+      "finished_at": "2026-11-27T18:46:04Z",
+      "id": "46051801304:1",
+      "months": [
+        {
+          "checked": true,
+          "dates": [],
+          "month": "2026-11"
+        },
+        {
+          "checked": true,
+          "dates": [],
+          "month": "2026-12"
+        },
+        {
+          "checked": true,
+          "dates": [],
+          "month": "2027-01"
+        }
+      ],
+      "navigation_note": "Tried 2027-02 once; the portal stayed on 2027-01. 2027-02 was not checked.",
+      "notification_error": null,
+      "reason": null,
+      "run_id": "46051801304",
+      "run_url": "https://github.com/BerkeEmerce/rktermin-visa-monitor/actions/runs/46051801304/attempts/1",
+      "scheduler": "cron-job.org",
+      "snapshot_capture_error": null,
+      "snapshot_manifest": "snapshots/runs/46051801304-1.json",
+      "source": "automatic",
+      "started_at": "2026-11-27T18:45:20Z",
+      "status": "UNAVAILABLE",
+      "trigger": "workflow_dispatch",
+      "workflow_conclusion": "success"
+    },
+    {
+      "attempt": 1,
+      "calendar_checked": true,
+      "captcha_funds_status": "usable",
       "checked_at": "2026-11-27T18:15:46.577310+00:00",
       "coverage": "current local month onward until blocked, with a 24-arrow safety limit",
       "dates": [],
